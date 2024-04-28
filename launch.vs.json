@@ -1,0 +1,69 @@
+{
+  "version": "0.2.1",
+  "defaults": {},
+  "configurations": [
+    {
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "projectTarget": "exercise02.exe (exercises\\exercise02\\exercise02.exe)",
+      "name": "exercise02.exe (exercises\\exercise02\\exercise02.exe)",
+      "currentDir": "${workspaceRoot}\\exercises\\exercise02"
+    },
+    {
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "projectTarget": "exercise03.exe (exercises\\exercise03\\exercise03.exe)",
+      "name": "exercise03.exe (exercises\\exercise03\\exercise03.exe)",
+      "currentDir": "${workspaceRoot}\\exercises\\exercise03"
+    },
+    {
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "projectTarget": "exercise04.exe (exercises\\exercise04\\exercise04.exe)",
+      "name": "exercise04.exe (exercises\\exercise04\\exercise04.exe)",
+      "currentDir": "${workspaceRoot}\\exercises\\exercise04"
+    },
+    {
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "projectTarget": "exercise05.exe (exercises\\exercise05\\exercise05.exe)",
+      "name": "exercise05.exe (exercises\\exercise05\\exercise05.exe)",
+      "currentDir": "${workspaceRoot}\\exercises\\exercise05"
+    },
+    {
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "projectTarget": "exercise07.exe (exercises\\exercise07\\exercise07.exe)",
+      "name": "exercise07.exe (exercises\\exercise07\\exercise07.exe)",
+      "currentDir": "${workspaceRoot}\\exercises\\exercise07"
+    },
+    {
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "projectTarget": "exercise08.exe (exercises\\exercise08\\exercise08.exe)",
+      "name": "exercise08.exe (exercises\\exercise08\\exercise08.exe)",
+      "currentDir": "${workspaceRoot}\\exercises\\exercise08"
+    },
+    {
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "projectTarget": "exercise09.exe (exercises\\exercise09\\exercise09.exe)",
+      "name": "exercise09.exe (exercises\\exercise09\\exercise09.exe)",
+      "currentDir": "${workspaceRoot}\\exercises\\exercise09"
+    },
+    {
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "projectTarget": "exercise10.exe (exercises\\exercise10\\exercise10.exe)",
+      "name": "exercise10.exe (exercises\\exercise10\\exercise10.exe)",
+      "currentDir": "${workspaceRoot}\\exercises\\exercise10"
+    },
+    {
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "projectTarget": "finalProject.exe (exercises\\finalProject\\finalProject.exe)",
+      "name": "finalProject.exe (exercises\\finalProject\\finalProject.exe)",
+      "currentDir": "${workspaceRoot}\\exercises\\finalProject"
+    }
+  ]
+}
