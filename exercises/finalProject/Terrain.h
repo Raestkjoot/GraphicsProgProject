@@ -16,6 +16,7 @@ public:
 
 private:
     static std::vector<float> CreateHeightMap(unsigned int width, unsigned int height);
+    int indexFrom2D(int x, int y, int columnCount);
 //    unsigned int m_gridX, m_gridY;
 //
 //    Camera m_camera;

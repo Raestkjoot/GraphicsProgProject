@@ -42,21 +42,26 @@ void Terrain::CreateTerrainMesh(std::shared_ptr<Mesh> mesh, unsigned int gridX, 
     struct Vertex
     {
         Vertex() = default;
-        Vertex(const glm::vec3& position, const glm::vec3& normal, const glm::vec2 texCoord)
-            : position(position), normal(normal), texCoord(texCoord) {}
+        Vertex(const glm::vec3& position, const glm::vec3& normal, const glm::vec3& tangent, const glm::vec3& bitangent, const glm::vec2 texCoord)
+            : position(position), normal(normal), tangent(tangent), bitangent(bitangent), texCoord(texCoord) {}
         glm::vec3 position;
         glm::vec3 normal;
+        glm::vec3 tangent;
+        glm::vec3 bitangent;
         glm::vec2 texCoord;
     };
 
     // Define the vertex format (should match the vertex structure)
     VertexFormat vertexFormat;
-    vertexFormat.AddVertexAttribute<float>(3);
-    vertexFormat.AddVertexAttribute<float>(3);
-    vertexFormat.AddVertexAttribute<float>(2);
+    vertexFormat.AddVertexAttribute<float>(3); // position
+    vertexFormat.AddVertexAttribute<float>(3); // normal
+    vertexFormat.AddVertexAttribute<float>(3); // tangent
+    vertexFormat.AddVertexAttribute<float>(3); // bitangent
+    vertexFormat.AddVertexAttribute<float>(2); // texture coordinates
 
     // List of vertices (VBO)
     std::vector<Vertex> vertices;
+    std::vector<glm::vec3> positions;
 
     // List of indices (EBO)
     std::vector<unsigned int> indices;
@@ -67,11 +72,11 @@ void Terrain::CreateTerrainMesh(std::shared_ptr<Mesh> mesh, unsigned int gridX, 
     float height = 5.0f;
 
     // Number of columns and rows
-    unsigned int columnCount = gridX;
-    unsigned int rowCount = gridY;
+    unsigned int columnCount = gridX + 1;
+    unsigned int rowCount = gridY + 1;
 
     // Generate heightmap
-    std::vector<float> heightmap = CreateHeightMap(gridX, gridY);
+    std::vector<float> heightmap = CreateHeightMap(columnCount, rowCount);
 
     // Iterate over each VERTEX
     for (unsigned int j = 0; j < rowCount; ++j)
@@ -80,9 +85,7 @@ void Terrain::CreateTerrainMesh(std::shared_ptr<Mesh> mesh, unsigned int gridX, 
         {
             // Vertex data for this vertex only
             glm::vec3 position(i * scale.x, heightmap[(j * gridX + i)] * height, j* scale.y);
-            glm::vec3 normal(0.0f, 1.0f, 0.0f);
-            glm::vec2 texCoord(i, j);
-            vertices.emplace_back(position, normal, texCoord);
+            positions.push_back(position);
 
             // Index data for quad formed by previous vertices and current
             if (i > 0 && j > 0)
@@ -105,8 +108,37 @@ void Terrain::CreateTerrainMesh(std::shared_ptr<Mesh> mesh, unsigned int gridX, 
         }
     }
 
+
+    // Compute normals when we have the positions of all the vertices
+    // Iterate AGAIN over each vertex
+    for (unsigned int j = 0u; j < rowCount; ++j)
+    {
+        for (unsigned int i = 0u; i < columnCount; ++i)
+        {
+
+            unsigned int index = j * columnCount + i;
+            unsigned int prevX = i > 0 ? index - 1 : index;
+            unsigned int nextX = i < gridX ? index + 1 : index;
+            int prevY = j > 0 ? index - columnCount : index;
+            int nextY = j < gridY ? index + columnCount : index;
+
+            glm::vec3 tangent = positions[nextX] - positions[prevX];
+            tangent = glm::normalize(tangent);
+            glm::vec3 bitangent = positions[nextY] - positions[prevY];
+            bitangent = glm::normalize(bitangent);
+            glm::vec3 normal = glm::cross(tangent, bitangent);
+            glm::vec2 texCoord(i, j);
+
+            vertices.emplace_back(positions[index], normal, tangent, bitangent, texCoord);
+        }
+    }
+
     mesh.get()->AddSubmesh<Vertex, unsigned int, VertexFormat::LayoutIterator>(Drawcall::Primitive::Triangles, vertices, indices,
         vertexFormat.LayoutBegin(static_cast<int>(vertices.size()), true /* interleaved */), vertexFormat.LayoutEnd());
+}
+
+int Terrain::indexFrom2D(int x, int y, int columnCount) {
+    return y * columnCount + x;
 }
 
 //TexturedTerrainApplication::TexturedTerrainApplication()

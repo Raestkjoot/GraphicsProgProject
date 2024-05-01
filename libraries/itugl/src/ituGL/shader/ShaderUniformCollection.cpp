@@ -340,7 +340,7 @@ void ShaderUniformCollection::UseUniform<float>(const DataUniform& uniform) cons
         m_shaderProgram->SetUniforms<float>(location, GetDataValues<float>(location));
         break;
     case UniformDimension::Vector2:
-        m_shaderProgram->SetUniforms<float, 2>(location, GetDataValues<glm::vec<2,float>>(location));
+        m_shaderProgram->SetUniforms<float, 2>(location, GetDataValues<glm::vec<2, float>>(location));
         break;
     case UniformDimension::Vector3:
         m_shaderProgram->SetUniforms<float, 3>(location, GetDataValues<glm::vec<3, float>>(location));

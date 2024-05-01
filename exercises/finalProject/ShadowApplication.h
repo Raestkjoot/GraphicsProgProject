@@ -34,6 +34,8 @@ private:
     void InitializeRenderer();
 
     std::shared_ptr<Material> CreatePostFXMaterial(const char* fragmentShaderPath, std::shared_ptr<Texture2DObject> sourceTexture = nullptr);
+    void CreateTerrainMaterial(std::shared_ptr<Material> material);
+    std::shared_ptr<Texture2DObject> LoadTexture(const char* path);
 
     Renderer::UpdateTransformsFunction GetFullscreenTransformFunction(std::shared_ptr<ShaderProgram> shaderProgramPtr) const;
 
@@ -65,6 +67,12 @@ private:
     std::shared_ptr<Material> m_composeMaterial;
     std::shared_ptr<Material> m_bloomMaterial;
     std::shared_ptr<Material> m_terrainMaterial;
+
+    // Material properties
+    glm::vec3 m_terrainColor;
+    std::shared_ptr<Texture2DObject> m_terrain_colorTexture;
+    std::shared_ptr<Texture2DObject> m_terrain_normalTexture;
+    std::shared_ptr<Texture2DObject> m_terrain_specularTexture;
 
     // Framebuffers
     std::shared_ptr<FramebufferObject> m_sceneFramebuffer;

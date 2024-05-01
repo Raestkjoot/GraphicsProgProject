@@ -167,13 +167,13 @@ private:
     // Delete all the properties and set the shader program to null
     void Reset();
 
-#ifndef NDEBUG
+    #ifndef NDEBUG
     bool IsScalar(UniformDimension dimension) const;
     bool IsVector(UniformDimension dimension) const;
     bool IsMatrix(UniformDimension dimension) const;
     bool IsVectorSize(UniformDimension dimension, int size) const;
     bool IsMatrixSize(UniformDimension dimension, int columns, int rows) const;
-#endif
+    #endif
 
 protected:
     // The shader program
@@ -225,7 +225,7 @@ inline void ShaderUniformCollection::GetUniformValue(const char* name, T& value)
 template<typename T>
 inline void ShaderUniformCollection::GetUniformValue(ShaderProgram::Location location, T& value) const
 {
-    GetUniformValue(location, std::span(&value, 1));
+    GetUniformValues(location, std::span(&value, 1));
 }
 
 template<typename T>

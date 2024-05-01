@@ -28,6 +28,8 @@
 #include <ituGL/scene/ImGuiSceneVisitor.h>
 #include <imgui.h>
 
+#include <stb_image.h>
+
 ShadowApplication::ShadowApplication()
     : Application(1024, 1024, "Shadow Scene Viewer demo")
     , m_renderer(GetDevice())
@@ -40,6 +42,7 @@ ShadowApplication::ShadowApplication()
     , m_blurIterations(1)
     , m_bloomRange(1.0f, 2.0f)
     , m_bloomIntensity(1.0f)
+    , m_terrainColor(1.0f)
 {
 }
 
@@ -290,7 +293,10 @@ void ShadowApplication::InitializeModels()
     std::shared_ptr<Model> terrainModel = std::make_shared<Model>(terrainMesh);
     m_scene.AddSceneNode(std::make_shared<SceneModel>("terrain", terrainModel));
     // Add material to terrain
-    terrainModel.get()->AddMaterial(m_defaultMaterial);
+    m_terrainMaterial = std::make_shared<Material>(*m_defaultMaterial);
+    CreateTerrainMaterial(m_terrainMaterial);
+    terrainModel.get()->AddMaterial(m_terrainMaterial);
+
 }
 
 void ShadowApplication::InitializeFramebuffers()
@@ -510,4 +516,41 @@ void ShadowApplication::RenderGUI()
     }
 
     m_imGui.EndFrame();
+}
+
+void ShadowApplication::CreateTerrainMaterial(std::shared_ptr<Material> material)
+{
+    material->SetUniformValue<glm::vec3>("Color", m_terrainColor);
+
+    m_terrain_colorTexture = LoadTexture("textures/grass.jpg");
+    material->SetUniformValue("ColorTexture", m_terrain_colorTexture);
+
+    m_terrain_normalTexture = LoadTexture("models/cannon/cannon_normal.png");
+    material->SetUniformValue("NormalTexture", m_terrain_normalTexture);
+
+    m_terrain_specularTexture = LoadTexture("models/cannon/cannon_arm.png");
+    material->SetUniformValue("SpecularTexture", m_terrain_specularTexture);
+}
+
+std::shared_ptr<Texture2DObject> ShadowApplication::LoadTexture(const char* path)
+{
+    std::shared_ptr<Texture2DObject> texture = std::make_shared<Texture2DObject>();
+
+    int width = 0;
+    int height = 0;
+    int components = 0;
+
+    // Load the texture data here
+    unsigned char* data = stbi_load(path, &width, &height, &components, 4);
+
+    texture->Bind();
+    texture->SetImage(0, width, height, TextureObject::FormatRGBA, TextureObject::InternalFormatRGBA, std::span<const unsigned char>(data, width * height * 4));
+
+    // Generate mipmaps
+    texture->GenerateMipmap();
+
+    // Release texture data
+    stbi_image_free(data);
+
+    return texture;
 }
