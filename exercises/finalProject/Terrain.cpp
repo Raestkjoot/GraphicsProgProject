@@ -16,8 +16,6 @@
 
 std::vector<float> Terrain::CreateHeightMap(unsigned int width, unsigned int height)
 {
-    //std::shared_ptr<Texture2DObject> heightmap = std::make_shared<Texture2DObject>();
-
     std::vector<float> pixels(height * width);
     for (unsigned int j = 0; j < height; ++j)
     {
@@ -26,12 +24,9 @@ std::vector<float> Terrain::CreateHeightMap(unsigned int width, unsigned int hei
             float x = static_cast<float>(i) / (width - 1);
             float y = static_cast<float>(j) / (height - 1);
             pixels[j * width + i] = stb_perlin_fbm_noise3(x, y, 0.0f, 1.9f, 0.5f, 8) * 0.5f;
+
         }
     }
-
-    //heightmap->Bind();
-    //heightmap->SetImage<float>(0, width, height, TextureObject::FormatR, TextureObject::InternalFormatR16F, pixels);
-    //heightmap->GenerateMipmap();
 
     return pixels;
 }
@@ -84,7 +79,8 @@ void Terrain::CreateTerrainMesh(std::shared_ptr<Mesh> mesh, unsigned int gridX, 
         for (unsigned int i = 0; i < columnCount; ++i)
         {
             // Vertex data for this vertex only
-            glm::vec3 position(i * scale.x, heightmap[(j * gridX + i)] * height, j* scale.y);
+            glm::vec3 position(i * scale.x, heightmap[(j * columnCount + i)] * height, j* scale.y);
+            //glm::vec3 position(i * scale.x, 0.0f, j* scale.y);
             positions.push_back(position);
 
             // Index data for quad formed by previous vertices and current
@@ -126,7 +122,7 @@ void Terrain::CreateTerrainMesh(std::shared_ptr<Mesh> mesh, unsigned int gridX, 
             tangent = glm::normalize(tangent);
             glm::vec3 bitangent = positions[nextY] - positions[prevY];
             bitangent = glm::normalize(bitangent);
-            glm::vec3 normal = glm::cross(tangent, bitangent);
+            glm::vec3 normal = glm::cross(bitangent, tangent);
             glm::vec2 texCoord(i, j);
 
             vertices.emplace_back(positions[index], normal, tangent, bitangent, texCoord);

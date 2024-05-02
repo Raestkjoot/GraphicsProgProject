@@ -525,10 +525,10 @@ void ShadowApplication::CreateTerrainMaterial(std::shared_ptr<Material> material
     m_terrain_colorTexture = LoadTexture("textures/grass.jpg");
     material->SetUniformValue("ColorTexture", m_terrain_colorTexture);
 
-    m_terrain_normalTexture = LoadTexture("models/cannon/cannon_normal.png");
+    m_terrain_normalTexture = LoadTexture("textures/Default_NormalMap.png");
     material->SetUniformValue("NormalTexture", m_terrain_normalTexture);
 
-    m_terrain_specularTexture = LoadTexture("models/cannon/cannon_arm.png");
+    m_terrain_specularTexture = LoadTexture("textures/Default_ARM.png");
     material->SetUniformValue("SpecularTexture", m_terrain_specularTexture);
 }
 
