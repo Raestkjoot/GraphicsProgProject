@@ -14,23 +14,23 @@
 #include <iostream>
 #include <numbers>  // for PI constant
 
-std::vector<float> Terrain::CreateHeightMap(unsigned int width, unsigned int height)
+std::vector<float> Terrain::CreateHeightMap(unsigned int horizontal, unsigned int vertical, float height)
 {
-    std::vector<float> pixels(height * width);
-    for (unsigned int j = 0; j < height; ++j)
+    std::vector<float> pixels(vertical * horizontal);
+    for (unsigned int j = 0; j < vertical; ++j)
     {
-        for (unsigned int i = 0; i < width; ++i)
+        for (unsigned int i = 0; i < horizontal; ++i)
         {
-            float x = static_cast<float>(i) / (width - 1);
-            float y = static_cast<float>(j) / (height - 1);
-            pixels[j * width + i] = stb_perlin_fbm_noise3(x, y, 0.0f, 1.9f, 0.5f, 8) * 0.5f;
+            float x = static_cast<float>(i) / (horizontal - 1);
+            float y = static_cast<float>(j) / (vertical - 1);
+            pixels[j * horizontal + i] = stb_perlin_fbm_noise3(x, y, 0.0f, 1.9f, 0.5f, 8) * height;
         }
     }
 
     return pixels;
 }
 
-void Terrain::CreateTerrainMesh(std::shared_ptr<Mesh> mesh, unsigned int gridX, unsigned int gridY)
+std::vector<float> Terrain::CreateTerrainMesh(std::shared_ptr<Mesh> mesh, unsigned int gridX, unsigned int gridY, float height, float size)
 {
     // Define the vertex structure
     struct Vertex
@@ -61,16 +61,14 @@ void Terrain::CreateTerrainMesh(std::shared_ptr<Mesh> mesh, unsigned int gridX, 
     std::vector<unsigned int> indices;
 
     // Grid scale to convert the entire grid to size 1x1
-    float size = 10.0f;
     glm::vec2 scale(size / (gridX - 1), size / (gridY - 1));
-    float height = 5.0f;
 
     // Number of columns and rows
     unsigned int columnCount = gridX + 1;
     unsigned int rowCount = gridY + 1;
 
     // Generate heightmap
-    std::vector<float> heightmap = CreateHeightMap(columnCount, rowCount);
+    std::vector<float> heightmap = CreateHeightMap(columnCount, rowCount, height);
 
     // Iterate over each VERTEX
     for (unsigned int j = 0; j < rowCount; ++j)
@@ -78,7 +76,7 @@ void Terrain::CreateTerrainMesh(std::shared_ptr<Mesh> mesh, unsigned int gridX, 
         for (unsigned int i = 0; i < columnCount; ++i)
         {
             // Vertex data for this vertex only
-            glm::vec3 position(i * scale.x, heightmap[(j * columnCount + i)] * height, j* scale.y);
+            glm::vec3 position(i * scale.x, heightmap[(j * columnCount + i)], j* scale.y);
             //glm::vec3 position(i * scale.x, 0.0f, j* scale.y);
             positions.push_back(position);
 
@@ -130,4 +128,6 @@ void Terrain::CreateTerrainMesh(std::shared_ptr<Mesh> mesh, unsigned int gridX, 
 
     mesh.get()->AddSubmesh<Vertex, unsigned int, VertexFormat::LayoutIterator>(Drawcall::Primitive::Triangles, vertices, indices,
         vertexFormat.LayoutBegin(static_cast<int>(vertices.size()), true /* interleaved */), vertexFormat.LayoutEnd());
+
+    return heightmap;
 }

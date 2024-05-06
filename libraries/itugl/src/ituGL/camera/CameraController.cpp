@@ -11,7 +11,7 @@
 CameraController::CameraController()
     : m_enabled(false), m_enablePressed(false)
     , m_mousePosition(0.0f)
-    , m_translationSpeed(2.0f), m_rotationSpeed(2.0f)
+    , m_translationSpeed(20.0f), m_rotationSpeed(2.0f)
 {
 }
 
@@ -97,7 +97,7 @@ void CameraController::DrawGUI(DearImGui& imGui)
 {
     if (auto window = imGui.UseWindow("Camera Controller"))
     {
-        ImGui::SliderFloat("Translation speed", &m_translationSpeed, 0.0f, 5.0f);
+        ImGui::SliderFloat("Translation speed", &m_translationSpeed, 1.0f, 100.0f);
         ImGui::SliderFloat("Rotation speed", &m_rotationSpeed, 0.0f, 5.0f);
     }
 }

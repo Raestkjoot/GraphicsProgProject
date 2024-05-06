@@ -41,6 +41,10 @@ private:
 
     void RenderGUI();
 
+    static inline float GetRandom01() { return ((float)rand() / (RAND_MAX)) + 1; }
+    static inline float GetRandom(float max) { return max * GetRandom01(); }
+    static inline float GetRandomRange(float min, float max) { return GetRandom01() * (max - min) + min; }
+
 private:
     // Helper object for debug GUI
     DearImGui m_imGui;
@@ -53,6 +57,9 @@ private:
 
     // Renderer
     Renderer m_renderer;
+
+    // Heightmap
+    std::vector<float> m_heightmap;
 
     // Skybox texture
     std::shared_ptr<TextureCubemapObject> m_skyboxTexture;

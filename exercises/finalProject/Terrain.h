@@ -12,8 +12,8 @@ class Texture2DObject;
 class Terrain
 {
 public:
-    static void CreateTerrainMesh(std::shared_ptr<Mesh> mesh, unsigned int gridX, unsigned int gridY);
+    static std::vector<float> CreateTerrainMesh(std::shared_ptr<Mesh> mesh, unsigned int gridX, unsigned int gridY, float height, float size);
 
 private:
-    static std::vector<float> CreateHeightMap(unsigned int width, unsigned int height);
+    static std::vector<float> CreateHeightMap(unsigned int horizontal, unsigned int vertical, float height);
 };
