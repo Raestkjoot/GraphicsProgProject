@@ -25,6 +25,7 @@
 #include <ituGL/renderer/PostFXRenderPass.h>
 #include <ituGL/scene/RendererSceneVisitor.h>
 
+#include <ituGL/scene/Transform.h>
 #include <ituGL/scene/ImGuiSceneVisitor.h>
 #include <imgui.h>
 
@@ -193,6 +194,13 @@ void ShadowApplication::InitializeMaterials()
         // Create material
         m_defaultMaterial = std::make_shared<Material>(shaderProgramPtr, filteredUniforms);
         m_defaultMaterial->SetUniformValue("Color", glm::vec3(1.0f, 0.0f, 1.0f));
+        // Use default textures
+        m_default_colorTexture = LoadTexture("textures/Default_Albedo.jpg");
+        m_defaultMaterial->SetUniformValue("ColorTexture", m_default_colorTexture);
+        m_default_normalTexture = LoadTexture("textures/Default_NormalMap.png");
+        m_defaultMaterial->SetUniformValue("NormalTexture", m_default_normalTexture);
+        m_default_specularTexture = LoadTexture("textures/Default_ARM.png");
+        m_defaultMaterial->SetUniformValue("SpecularTexture", m_default_specularTexture);
     }
 
     // Deferred material
@@ -284,8 +292,13 @@ void ShadowApplication::InitializeModels()
     loader.SetMaterialProperty(ModelLoader::MaterialProperty::SpecularTexture, "SpecularTexture");
 
     // Load models
-    std::shared_ptr<Model> cannonModel = loader.LoadShared("models/cannon/cannon.obj");
-    m_scene.AddSceneNode(std::make_shared<SceneModel>("cannon", cannonModel));
+    //std::shared_ptr<Model> cannonModel = loader.LoadShared("models/cannon/cannon.obj");
+    //m_scene.AddSceneNode(std::make_shared<SceneModel>("cannon", cannonModel));
+
+    std::shared_ptr<Model> treeModel = loader.LoadShared("models/myTree/Tree.obj");
+    std::shared_ptr<SceneNode> treeSceneNode = std::make_shared<SceneModel>("tree", treeModel);
+    treeSceneNode->GetTransform()->SetTranslation(glm::vec3(3.0f, 1.0f, 1.0f));
+    m_scene.AddSceneNode(std::make_shared<SceneModel>("tree", treeModel));
 
     // Generate terrain model
     std::shared_ptr<Mesh> terrainMesh = std::make_shared<Mesh>();

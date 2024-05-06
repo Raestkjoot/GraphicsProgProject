@@ -69,6 +69,9 @@ private:
     std::shared_ptr<Material> m_terrainMaterial;
 
     // Material properties
+    std::shared_ptr<Texture2DObject> m_default_colorTexture;
+    std::shared_ptr<Texture2DObject> m_default_normalTexture;
+    std::shared_ptr<Texture2DObject> m_default_specularTexture;
     glm::vec3 m_terrainColor;
     std::shared_ptr<Texture2DObject> m_terrain_colorTexture;
     std::shared_ptr<Texture2DObject> m_terrain_normalTexture;
