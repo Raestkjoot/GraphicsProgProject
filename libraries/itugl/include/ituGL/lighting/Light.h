@@ -56,4 +56,5 @@ protected:
     std::shared_ptr<const TextureObject> m_shadowMap;
     glm::mat4 m_shadowMatrix;
     float m_shadowBias;
+    glm::ivec2 m_shadowMapResolution;
 };

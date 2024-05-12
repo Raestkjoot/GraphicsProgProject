@@ -3,11 +3,19 @@
 #include <ituGL/scene/Scene.h>
 #include <ituGL/scene/Transform.h>
 
-SceneNode::SceneNode(const std::string& name) : SceneNode(name, std::make_shared<Transform>())
+SceneNode::SceneNode(const std::string& name) : SceneNode(name, std::make_shared<Transform>(), glm::vec3(1.0f))
 {
 }
 
-SceneNode::SceneNode(const std::string& name, std::shared_ptr<Transform> transform) : m_scene(nullptr), m_name(name), m_transform(transform)
+SceneNode::SceneNode(const std::string& name, glm::vec3 AABB_extents) : SceneNode(name, std::make_shared<Transform>(), AABB_extents)
+{
+}
+
+SceneNode::SceneNode(const std::string& name, std::shared_ptr<Transform> transform) : SceneNode(name, transform, glm::vec3(1.0f))
+{
+}
+
+SceneNode::SceneNode(const std::string& name, std::shared_ptr<Transform> transform, glm::vec3 AABB_extents) : m_scene(nullptr), m_name(name), m_transform(transform), m_AABB_extents(AABB_extents)
 {
 }
 
@@ -74,6 +82,11 @@ AabbBounds SceneNode::GetAabbBounds() const
 BoxBounds SceneNode::GetBoxBounds() const
 {
     return BoxBounds(glm::vec3(m_transform->GetTranslation()), glm::mat3(1.0f), glm::vec3(0.0f)); // use world translation?
+}
+
+glm::vec3 SceneNode::GetAabbExtents() const
+{
+    return m_transform->GetTranslation() + m_AABB_extents;
 }
 
 void SceneNode::AcceptVisitor(SceneVisitor& visitor)

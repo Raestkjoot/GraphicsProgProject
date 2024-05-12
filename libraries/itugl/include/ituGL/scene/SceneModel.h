@@ -9,6 +9,7 @@ class SceneModel : public SceneNode//, public Renderable
 {
 public:
     SceneModel(const std::string& name, std::shared_ptr<Model> model);
+    SceneModel(const std::string& name, std::shared_ptr<Model> model, glm::vec3 AABB_extents);
     SceneModel(const std::string& name, std::shared_ptr<Model> model, std::shared_ptr<Transform> transform);
 
     std::shared_ptr<Model> GetModel() const;
@@ -21,6 +22,7 @@ public:
     SphereBounds GetSphereBounds() const override;
     AabbBounds GetAabbBounds() const override;
     BoxBounds GetBoxBounds() const override;
+    glm::vec3 GetAabbExtents() const override;
 
     void AcceptVisitor(SceneVisitor& visitor) override;
     void AcceptVisitor(SceneVisitor& visitor) const override;

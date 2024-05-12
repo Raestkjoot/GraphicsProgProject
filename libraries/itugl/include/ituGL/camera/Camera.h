@@ -3,6 +3,8 @@
 #include <glm/vec3.hpp>
 #include <glm/mat4x4.hpp>
 
+#include <vector>
+
 // Class that represents a camera in a 3D scene
 class Camera
 {
@@ -36,6 +38,8 @@ public:
 
     // Extract the basis vectors from the view matrix
     void ExtractVectors(glm::vec3& right, glm::vec3& up, glm::vec3& forward) const;
+
+    std::vector<glm::vec4> GetFrustumCornersWorldSpace() const;
 
 
 private:

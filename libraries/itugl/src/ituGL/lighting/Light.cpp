@@ -86,6 +86,7 @@ bool Light::CreateShadowMap(glm::ivec2 resolution)
     glm::vec4 borderColor(1.0f);
     shadowMap->SetParameter(TextureObject::ParameterColor::BorderColor, std::span<float, 4>(&borderColor[0], &borderColor[0] + 4));
     m_shadowMap = shadowMap;
+    m_shadowMapResolution = resolution;
     return true;
 }
 

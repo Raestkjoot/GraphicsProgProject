@@ -2,6 +2,7 @@
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
 #include <numbers>
+#include <vector>
 
 Camera::Camera() : m_viewMatrix(1.0f), m_projMatrix(1.0f)
 {
@@ -67,4 +68,24 @@ void Camera::ExtractVectors(glm::vec3& right, glm::vec3& up, glm::vec3& forward)
     right = transposed[0];
     up = transposed[1];
     forward = transposed[2];
+}
+
+std::vector<glm::vec4> Camera::GetFrustumCornersWorldSpace() const
+{
+    const glm::mat4 inv = glm::inverse(m_projMatrix * m_viewMatrix);
+
+    std::vector<glm::vec4> frustumCorners;
+    for (unsigned int x = 0; x < 2; ++x)
+    {
+        for (unsigned int y = 0; y < 2; ++y)
+        {
+            for (unsigned int z = 0; z < 2; ++z)
+            {
+                const glm::vec4 pt = inv * glm::vec4(2.0f * x - 1.0f, 2.0f * y - 1.0f, 2.0f * z - 1.0f, 1.0f);
+                frustumCorners.push_back(pt / pt.w);
+            }
+        }
+    }
+
+    return frustumCorners;
 }

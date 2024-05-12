@@ -1,8 +1,11 @@
 #include <ituGL/scene/Scene.h>
 
 #include <ituGL/scene/SceneNode.h>
+#include <ituGL/scene/SceneModel.h>
 #include <ituGL/scene/SceneVisitor.h>
 #include <cassert>
+#include <glm/gtx/string_cast.hpp>
+#include <iostream>
 
 Scene::Scene()
 {
@@ -31,6 +34,12 @@ bool Scene::AddSceneNode(std::shared_ptr<SceneNode> node)
     assert(node);
     m_nodes[node->GetName()] = node;
     node->SetOwnerScene(this);
+
+    glm::vec3 newNodeAABBExtents = node->GetAabbExtents();
+    m_AABBExtents.x = std::max(m_AABBExtents.x, newNodeAABBExtents.x);
+    m_AABBExtents.y = std::max(m_AABBExtents.y, newNodeAABBExtents.y);
+    m_AABBExtents.z = std::max(m_AABBExtents.z, newNodeAABBExtents.z);
+
     return true;
 }
 
@@ -68,4 +77,9 @@ void Scene::AcceptVisitor(SceneVisitor& visitor) const
     {
         pair.second->AcceptVisitor(visitor);
     }
+}
+
+glm::vec3 Scene::GetAABBExtents() const
+{
+    return m_AABBExtents;
 }

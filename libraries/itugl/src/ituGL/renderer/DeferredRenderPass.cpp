@@ -40,9 +40,6 @@ void DeferredRenderPass::Render()
         assert(first || light);
 
         const Mesh* mesh = &renderer.GetFullscreenMesh();
-        glm::mat4 worldMatrix = fullscreenMatrix;
-
-        // TODO: select different meshes depending on the type
 
         // Set the render states for the first and additional lights
         renderer.SetLightingRenderStates(first);

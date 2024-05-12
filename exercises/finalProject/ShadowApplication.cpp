@@ -37,7 +37,7 @@ ShadowApplication::ShadowApplication()
 	: Application(1024, 1024, "Shadow Scene Viewer demo")
 	, m_renderer(GetDevice())
 	, m_sceneFramebuffer(std::make_shared<FramebufferObject>())
-	, m_exposure(1.0f)
+	, m_exposure(0.41f)
 	, m_contrast(1.0f)
 	, m_hueShift(0.0f)
 	, m_saturation(1.0f)
@@ -97,8 +97,6 @@ void ShadowApplication::InitializeCamera()
 	camera->SetViewMatrix(glm::vec3(-2, 1, -2), glm::vec3(0, 0.5f, 0), glm::vec3(0, 1, 0));
 	camera->SetPerspectiveProjectionMatrix(1.0f, 1.0f, 0.1f, 500.0f);
 	std::shared_ptr<SceneCamera> sceneCamera = std::make_shared<SceneCamera>("camera", camera);
-	sceneCamera->GetTransform()->SetTranslation(glm::vec3(4.2f, -0.7f, 7.9f));
-	sceneCamera->GetTransform()->SetRotation(glm::vec3(-0.3f, -2.5f, 0.0f));
 	m_scene.AddSceneNode(sceneCamera);
 	m_cameraController.SetCamera(sceneCamera);
 }
@@ -107,15 +105,9 @@ void ShadowApplication::InitializeLights()
 {
 	// Create a directional light and add it to the scene
 	std::shared_ptr<DirectionalLight> directionalLight = std::make_shared<DirectionalLight>();
-	directionalLight->SetDirection(glm::vec3(0.0f, -1.0f, -0.3f)); // It will be normalized inside the function
-	directionalLight->SetIntensity(3.0f);
+	directionalLight->SetDirection(glm::vec3(0.29f, -0.5f, 1.4f)); // It will be normalized inside the function
+	directionalLight->SetIntensity(13.3f);
 	m_scene.AddSceneNode(std::make_shared<SceneLight>("directional light", directionalLight));
-
-	// TODO: Create a point light and add it to the scene
-	//std::shared_ptr<PointLight> pointLight = std::make_shared<PointLight>();
-	//pointLight->SetPosition(glm::vec3(0, 0, 0));
-	//pointLight->SetDistanceAttenuation(glm::vec2(5.0f, 10.0f));
-	//m_scene.AddSceneNode(std::make_shared<SceneLight>("point light", pointLight));
 
 	m_mainLight = directionalLight;
 }
@@ -262,7 +254,7 @@ void ShadowApplication::InitializeMaterials()
 
 void ShadowApplication::InitializeModels()
 {
-	m_skyboxTexture = TextureCubemapLoader::LoadTextureShared("models/skybox/yoga_studio.hdr", TextureObject::FormatRGB, TextureObject::InternalFormatRGB16F);
+	m_skyboxTexture = TextureCubemapLoader::LoadTextureShared("models/skybox/StandardCubeMap.hdr", TextureObject::FormatRGB, TextureObject::InternalFormatRGB16F);
 
 	m_skyboxTexture->Bind();
 	float maxLod;
@@ -294,15 +286,18 @@ void ShadowApplication::InitializeModels()
 	loader.SetMaterialProperty(ModelLoader::MaterialProperty::DiffuseTexture, "ColorTexture");
 	loader.SetMaterialProperty(ModelLoader::MaterialProperty::NormalTexture, "NormalTexture");
 	loader.SetMaterialProperty(ModelLoader::MaterialProperty::SpecularTexture, "SpecularTexture");
-
+	
 	// Generate terrain model
 	std::shared_ptr<Mesh> terrainMesh = std::make_shared<Mesh>();
 	float terrainSize = 150.0f;
+	float terrainHeight = 50.0f;
 	unsigned int terrainGridSize = 256u;
 	float indexMultiplier = terrainSize / static_cast<float>(terrainGridSize - 1);
-	m_heightmap = Terrain::CreateTerrainMesh(terrainMesh, terrainGridSize, terrainGridSize, 50.0f, terrainSize);
+	m_heightmap = Terrain::CreateTerrainMesh(terrainMesh, terrainGridSize, terrainGridSize, terrainHeight, terrainSize);
 	std::shared_ptr<Model> terrainModel = std::make_shared<Model>(terrainMesh);
-	m_scene.AddSceneNode(std::make_shared<SceneModel>("terrain", terrainModel));
+	glm::vec3 terrainAABBExtents = glm::vec3(terrainSize / 2.0f, terrainHeight / 2.0f, terrainSize / 2.0f);
+	std::shared_ptr<SceneModel> terrainSceneModel = std::make_shared<SceneModel>("terrain", terrainModel, terrainAABBExtents);
+	m_scene.AddSceneNode(terrainSceneModel);
 	// Add material to terrain
 	m_terrainMaterial = std::make_shared<Material>(*m_defaultMaterial);
 	CreateTerrainMaterial(m_terrainMaterial);
@@ -310,13 +305,14 @@ void ShadowApplication::InitializeModels()
 
 	// Load tree model
 	std::shared_ptr<Model> treeModel = loader.LoadShared("models/myTree/Tree.obj");
+	glm::vec3 treeAABBExtents = glm::vec3(1.5f, 1.5f, 2.0f);
 	// Generate random distribution of trees
 	int distance = 25;
-	for (int x = 0; x < terrainGridSize / distance; ++x) {
-		for (int y = 0; y < terrainGridSize / distance; ++y) {
+	for (unsigned int x = 0u; x < terrainGridSize / distance; ++x) {
+		for (unsigned int y = 0u; y < terrainGridSize / distance; ++y) {
 			std::string name("tree ");
 			name += std::to_string(y * distance + x);
-			std::shared_ptr<SceneModel> sceneModel = std::make_shared<SceneModel>(name, treeModel);
+			std::shared_ptr<SceneModel> sceneModel = std::make_shared<SceneModel>(name, treeModel, treeAABBExtents);
 
 			glm::ivec2 treeCoords(distance * x + distance * GetRandomRange(-0.4f, 0.4f), distance * y + distance * GetRandomRange(-0.4f, 0.4f));
 			float height = m_heightmap[treeCoords.y * (terrainGridSize + 1) + treeCoords.x];
@@ -376,11 +372,12 @@ void ShadowApplication::InitializeRenderer()
 	{
 		if (!m_mainLight->GetShadowMap())
 		{
-			m_mainLight->CreateShadowMap(glm::vec2(512, 512));
+			m_mainLight->CreateShadowMap(glm::vec2(1080, 1080));
 			m_mainLight->SetShadowBias(0.001f);
 		}
 		std::unique_ptr<ShadowMapRenderPass> shadowMapRenderPass(std::make_unique<ShadowMapRenderPass>(m_mainLight, m_shadowMapMaterial));
-		shadowMapRenderPass->SetVolume(glm::vec3(-3.0f * m_mainLight->GetDirection()), glm::vec3(6.0f));
+		// TODO: Set scene AABB Extents
+		shadowMapRenderPass->SetSceneExtents(m_scene.GetAABBExtents());
 		m_renderer.AddRenderPass(std::move(shadowMapRenderPass));
 	}
 
@@ -540,6 +537,19 @@ void ShadowApplication::RenderGUI()
 				m_bloomMaterial->SetUniformValue("Intensity", m_bloomIntensity);
 			}
 		}
+	}
+
+
+	if (auto window = m_imGui.UseWindow("Shadow Debug"))
+	{
+		ImVec2 pos = ImGui::GetCursorScreenPos();
+		float h = 20.0f; float w = 20.0f;
+
+		ImGui::GetWindowDrawList()->AddImage(
+			(void*)(m_mainLight->GetShadowMap()->GetHandle()), 
+			ImVec2(ImGui::GetItemRectMin().x + pos.x,
+				ImGui::GetItemRectMin().y + pos.y),
+			ImVec2(pos.x + h / 2, pos.y + w / 2), ImVec2(0, 1), ImVec2(1, 0));
 	}
 
 	m_imGui.EndFrame();

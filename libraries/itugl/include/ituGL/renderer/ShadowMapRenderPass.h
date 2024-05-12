@@ -14,12 +14,13 @@ public:
     ShadowMapRenderPass(std::shared_ptr<Light> light, std::shared_ptr<const Material> material, int drawcallCollectionIndex = 0);
 
     void SetVolume(glm::vec3 volumeCenter, glm::vec3 volumeSize);
+    void SetSceneExtents(glm::vec3 sceneExtents);
 
     void Render() override;
 
 private:
     void InitFramebuffer();
-    void InitLightCamera(Camera& lightCamera) const;
+    void InitLightCamera(Camera& lightCamera, const Camera& curCamera);
 
 private:
     std::shared_ptr<Light> m_light;
@@ -30,4 +31,5 @@ private:
 
     glm::vec3 m_volumeCenter;
     glm::vec3 m_volumeSize;
+    glm::vec3 m_sceneAABBExtents;
 };
