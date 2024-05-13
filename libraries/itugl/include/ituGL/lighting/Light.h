@@ -50,6 +50,9 @@ public:
     float GetShadowBias() const;
     void SetShadowBias(float bias);
 
+    glm::vec2 GetShadowMapResolution() const;
+    void SetShadowMapResolution(glm::vec2 resolution);
+
 protected:
     glm::vec3 m_color;
     float m_intensity;

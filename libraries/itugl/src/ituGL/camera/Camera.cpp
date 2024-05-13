@@ -89,3 +89,14 @@ std::vector<glm::vec4> Camera::GetFrustumCornersWorldSpace() const
 
     return frustumCorners;
 }
+
+std::vector<glm::vec3> Camera::GetFrustumCorners3D() const
+{
+    std::vector<glm::vec3> retval;
+    std::vector<glm::vec4> corners4D = GetFrustumCornersWorldSpace();
+    for (auto& corner : corners4D) {
+        retval.push_back(glm::vec3(corner));
+    }
+
+    return retval;
+}
