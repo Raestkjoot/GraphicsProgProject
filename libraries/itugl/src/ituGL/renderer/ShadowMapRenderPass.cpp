@@ -48,6 +48,7 @@ void ShadowMapRenderPass::InitFramebuffer()
     FramebufferObject::Unbind();
 
     m_targetFramebuffer = targetFramebuffer;
+    m_shadowBufferSize = static_cast<float>(m_light->GetShadowMapResolution().x);
 }
 
 void ShadowMapRenderPass::Render()
@@ -131,6 +132,40 @@ void ShadowMapRenderPass::InitLightCamera(Camera& lightCamera, const Camera& cur
         max.x = std::max(max.x, trf.x);
         max.y = std::max(max.y, trf.y);
     }
+    // TODO: Does the worldUnitsPerTexel require world space?
+    //glm::vec2 worldEdges(std::numeric_limits<float>::max());
+    //for (const auto& v : corners)
+    //{
+    //    const auto trf = lightView * v;
+    //    if (min.x > trf.x)
+    //    {
+    //        min.x = trf.x;
+    //        worldEdges.x = v.x;
+    //    }
+    //    if (min.y > trf.y)
+    //    {
+    //        min.y = trf.y;
+    //    }
+    //    if (max.x < trf.x)
+    //    {
+    //        max.x = trf.x;
+    //        worldEdges.y = v.x;
+    //    }
+    //    if (max.y < trf.y)
+    //    {
+    //        max.y = trf.y;
+    //    }
+    //}
+    //float worldUnitsPerTexel = glm::length(worldEdges) / m_shadowBufferSize;
+
+    // Move the Light in Texel-Sized Increments
+    float worldUnitsPerTexel = (max.x - min.x) / m_shadowBufferSize;
+    min /= worldUnitsPerTexel;
+    min = glm::floor(min);
+    min *= worldUnitsPerTexel;
+    max /= worldUnitsPerTexel;
+    max = glm::floor(max);
+    max *= worldUnitsPerTexel;
 
     // Tight near-far method:
     auto sceneLightSpace = GetSceneAABBLightSpace(lightView);

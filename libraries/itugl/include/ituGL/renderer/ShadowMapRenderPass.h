@@ -50,4 +50,5 @@ private:
     glm::vec3 m_volumeCenter;
     glm::vec3 m_volumeSize;
     glm::vec3 m_sceneAABBExtents;
+    float m_shadowBufferSize;
 };
