@@ -121,8 +121,6 @@ void ShadowMapRenderPass::InitLightCamera(Camera& lightCamera, const Camera& cur
     const auto lightView = glm::lookAt(center, center + m_light->GetDirection(), glm::vec3(0.0f, 1.0f, 0.0f));
     lightCamera.SetViewMatrix(lightView);
 
-    // Find the min and max corner values and set the volume size accordingly.
-    // We can do this every frame, since eventually with CSM we will actually need to do that.
     glm::vec3 min(std::numeric_limits<float>::max());
     glm::vec3 max(std::numeric_limits<float>::lowest());
     for (const auto& v : corners)
@@ -337,20 +335,22 @@ void ShadowMapRenderPass::ComputeNearAndFar(float& near, float& far, glm::vec2 l
                 }
             }
         }
+        // After iterating over the four light frustum points and clipping this AABB triangle to be inside, we check 
+        // if this triangle has a point with a tighter z value and update the near and far planes accordingly.
         for (int index = 0; index < triCount; ++index)
         {
             if (!triangles[index].isCulled)
             {
                 for (int pointIter = 0; pointIter < 3; pointIter++)
                 {
-                    float triCoordZ = triangles[index].points[pointIter].z;
-                    if (near > triCoordZ)
+                    float zVal = triangles[index].points[pointIter].z;
+                    if (near > zVal)
                     {
-                        near = triCoordZ;
+                        near = zVal;
                     }
-                    if (far < triCoordZ)
+                    if (far < zVal)
                     {
-                        far = triCoordZ;
+                        far = zVal;
                     }
                 }
             }
