@@ -296,8 +296,10 @@ void ShadowApplication::InitializeModels()
 	float indexMultiplier = terrainSize / static_cast<float>(terrainGridSize - 1);
 	m_heightmap = Terrain::CreateTerrainMesh(terrainMesh, terrainGridSize, terrainGridSize, terrainHeight, terrainSize);
 	std::shared_ptr<Model> terrainModel = std::make_shared<Model>(terrainMesh);
-	glm::vec3 terrainAABBExtents = glm::vec3(terrainSize / 2.0f, terrainHeight / 2.0f, terrainSize / 2.0f);
-	std::shared_ptr<SceneModel> terrainSceneModel = std::make_shared<SceneModel>("terrain", terrainModel, terrainAABBExtents);
+	// Add AABB info and add to scene
+	glm::vec3 terrainAABBMax = glm::vec3(terrainSize, terrainHeight * 0.5f, terrainSize);
+	glm::vec3 terrainAABBMin = glm::vec3(0.0f, -terrainHeight * 0.5f, 0.0f);
+	std::shared_ptr<SceneModel> terrainSceneModel = std::make_shared<SceneModel>("terrain", terrainModel, terrainAABBMin, terrainAABBMax);
 	m_scene.AddSceneNode(terrainSceneModel);
 	// Add material to terrain
 	m_terrainMaterial = std::make_shared<Material>(*m_defaultMaterial);
@@ -307,17 +309,23 @@ void ShadowApplication::InitializeModels()
 	// Load tree model
 	std::shared_ptr<Model> treeModel = loader.LoadShared("models/myTree/Tree.obj");
 	glm::vec3 treeAABBExtents = glm::vec3(1.5f, 1.5f, 2.0f);
+	glm::vec3 treeAABBMin;
+	glm::vec3 treeAABBMax;
 	// Generate random distribution of trees
 	int distance = 25;
 	for (unsigned int x = 0u; x < terrainGridSize / distance; ++x) {
 		for (unsigned int y = 0u; y < terrainGridSize / distance; ++y) {
 			std::string name("tree ");
 			name += std::to_string(y * distance + x);
-			std::shared_ptr<SceneModel> sceneModel = std::make_shared<SceneModel>(name, treeModel, treeAABBExtents);
-
 			glm::ivec2 treeCoords(distance * x + distance * GetRandomRange(-0.4f, 0.4f), distance * y + distance * GetRandomRange(-0.4f, 0.4f));
 			float height = m_heightmap[treeCoords.y * (terrainGridSize + 1) + treeCoords.x];
-			sceneModel->GetTransform()->SetTranslation(glm::vec3(treeCoords.x * indexMultiplier, height, treeCoords.y * indexMultiplier));
+			glm::vec3 position(treeCoords.x * indexMultiplier, height, treeCoords.y * indexMultiplier);
+
+			treeAABBMin = position - treeAABBExtents;
+			treeAABBMax = position + treeAABBExtents;
+			std::shared_ptr<SceneModel> sceneModel = std::make_shared<SceneModel>(name, treeModel, treeAABBMin, treeAABBMax);
+
+			sceneModel->GetTransform()->SetTranslation(position);
 			m_scene.AddSceneNode(sceneModel);
 		}
 	}
@@ -377,8 +385,9 @@ void ShadowApplication::InitializeRenderer()
 			m_mainLight->SetShadowBias(0.001f);
 		}
 		std::unique_ptr<ShadowMapRenderPass> shadowMapRenderPass(std::make_unique<ShadowMapRenderPass>(m_mainLight, m_shadowMapMaterial));
-		// TODO: Set scene AABB Extents
-		shadowMapRenderPass->SetSceneExtents(m_scene.GetAABBExtents());
+		glm::vec3 min, max;
+		m_scene.GetAABBBounds(min, max);
+		shadowMapRenderPass->SetSceneAABBBounds(min, max);
 		m_renderer.AddRenderPass(std::move(shadowMapRenderPass));
 	}
 

@@ -28,11 +28,13 @@ void ShadowMapRenderPass::SetVolume(glm::vec3 volumeCenter, glm::vec3 volumeSize
     m_volumeSize = volumeSize;
 }
 
-void ShadowMapRenderPass::SetSceneExtents(glm::vec3 sceneExtents)
+void ShadowMapRenderPass::SetSceneAABBBounds(const glm::vec3& min, const glm::vec3& max)
 {
-    // Hardcoded because deadline. But, we know the scene starts from 0 and grows in positive x and z,
-    // so we can just assume the aabb borders go from 0 - extents*2
-    m_sceneAABBExtents = sceneExtents;
+    m_sceneAABBMin = min;
+    m_sceneAABBMax = max;
+
+    m_sceneAABBExtents = (max - min) * 0.5f;
+    m_sceneAABBCenter = min + m_sceneAABBExtents;
 }
 
 void ShadowMapRenderPass::InitFramebuffer()
@@ -172,7 +174,8 @@ void ShadowMapRenderPass::InitLightCamera(Camera& lightCamera, const Camera& cur
     
     Renderer& renderer = GetRenderer();
     DebugRenderPass& debugRenderer = renderer.GetDebugRenderPass();
-    debugRenderer.AddAABB(glm::vec3(0.0f), m_sceneAABBExtents, 0xffffffff);
+
+    debugRenderer.AddAABB(m_sceneAABBCenter, m_sceneAABBExtents, 0xffffffff);
 
     ComputeNearAndFar(min.z, max.z, glm::vec2(min.x, min.y), glm::vec2(max.x, max.y), sceneLightSpace);
     // Naive method:
@@ -400,23 +403,29 @@ void ShadowMapRenderPass::ComputeNearAndFar(float& near, float& far, glm::vec2 l
 
 std::vector<glm::vec3> ShadowMapRenderPass::GetSceneAABBLightSpace(const glm::mat4& lightView)
 {
+    // 8 corners of the AABB box
     std::vector<glm::vec3> aabbCorners;
 
-    for (unsigned int x = 0; x < 2; ++x)
-    {
-        for (unsigned int y = 0; y < 2; ++y)
-        {
-            for (unsigned int z = 0; z < 2; ++z)
-            {
-                const glm::vec4 pt = lightView * glm::vec4(x * m_sceneAABBExtents.x * 2.0f, 
-                    y * m_sceneAABBExtents.y * 2.0f,
-                    z * m_sceneAABBExtents.z * 2.0f - (m_sceneAABBExtents.z * 1.0f), // Conservative z because it's inacurate atm
-                    1.0f);
+    // Top
+    aabbCorners.push_back({m_sceneAABBMax.x, m_sceneAABBMax.y, m_sceneAABBMax.z});
+    aabbCorners.push_back({m_sceneAABBMin.x, m_sceneAABBMax.y, m_sceneAABBMax.z});
+    aabbCorners.push_back({m_sceneAABBMin.x, m_sceneAABBMax.y, m_sceneAABBMin.z});
+    aabbCorners.push_back({m_sceneAABBMax.x, m_sceneAABBMin.y, m_sceneAABBMax.z});
 
-                aabbCorners.push_back(glm::vec3(pt / pt.w));
-            }
-        }
+    // Bottom
+    aabbCorners.push_back({ m_sceneAABBMin.x, m_sceneAABBMin.y, m_sceneAABBMin.z });
+    aabbCorners.push_back({ m_sceneAABBMax.x, m_sceneAABBMin.y, m_sceneAABBMin.z });
+    aabbCorners.push_back({ m_sceneAABBMax.x, m_sceneAABBMin.y, m_sceneAABBMax.z });
+    aabbCorners.push_back({ m_sceneAABBMin.x, m_sceneAABBMin.y, m_sceneAABBMax.z });
+
+    // TODO: optimize this
+    // Convert to light space
+    std::vector<glm::vec3> aabbCornersLightSpace;
+
+    for (const auto& pt : aabbCorners) {
+        glm::vec4 newPt = lightView * glm::vec4(pt, 1.0f);
+        aabbCornersLightSpace.push_back({ newPt / newPt.w });
     }
 
-    return aabbCorners;
+    return aabbCornersLightSpace;
 }

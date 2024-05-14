@@ -10,11 +10,13 @@ SceneModel::SceneModel(const std::string& name, std::shared_ptr<Model> model) : 
 {
 }
 
-SceneModel::SceneModel(const std::string& name, std::shared_ptr<Model> model, glm::vec3 AABB_extents) : SceneNode(name, AABB_extents), m_model(model)
+SceneModel::SceneModel(const std::string& name, std::shared_ptr<Model> model, glm::vec3 aabbBoundsMin, glm::vec3 aabbBoundsMax) 
+    : SceneNode(name, aabbBoundsMin, aabbBoundsMax), m_model(model)
 {
 }
 
-SceneModel::SceneModel(const std::string& name, std::shared_ptr<Model> model, std::shared_ptr<Transform> transform) : SceneNode(name, transform), m_model(model)
+SceneModel::SceneModel(const std::string& name, std::shared_ptr<Model> model, std::shared_ptr<Transform> transform, glm::vec3 aabbBoundsMin, glm::vec3 aabbBoundsMax) 
+    : SceneNode(name, aabbBoundsMin, aabbBoundsMax), m_model(model)
 {
 }
 
@@ -63,12 +65,12 @@ BoxBounds SceneModel::GetBoxBounds() const
     assert(m_model);
 
     // Setting the AABB extents manually is a hacky way of doing this in lieu of m_model->GetSize().
-    return BoxBounds(m_transform->GetTranslation(), m_transform->GetRotationMatrix(), m_transform->GetScale() * m_AABB_extents);
+    return BoxBounds(m_AABB_center, m_transform->GetRotationMatrix(), m_transform->GetScale() * m_AABB_extents);
 }
 
 glm::vec3 SceneModel::GetAabbExtents() const
 {
-    return m_transform->GetTranslation() + m_AABB_extents;
+    return m_AABB_extents;
 }
 
 void SceneModel::AcceptVisitor(SceneVisitor& visitor)

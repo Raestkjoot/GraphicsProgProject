@@ -12,9 +12,9 @@ class SceneNode
 {
 public:
     SceneNode(const std::string& name);
-    SceneNode(const std::string& name, glm::vec3 AABB_extents);
-    SceneNode(const std::string& name, std::shared_ptr<Transform> transform);
-    SceneNode(const std::string& name, std::shared_ptr<Transform> transform, glm::vec3 AABB_extents);
+    SceneNode(const std::string& name, glm::vec3 aabbBoundsMin, glm::vec3 aabbBoundsMax);
+    SceneNode(const std::string& name, std::shared_ptr<Transform> transform, 
+        glm::vec3 aabbBoundsMin = glm::vec3(0.0f), glm::vec3 aabbBoundsMax = glm::vec3(1.0f));
 
     virtual ~SceneNode();
 
@@ -45,4 +45,5 @@ protected:
     std::string m_name;
     std::shared_ptr<Transform> m_transform;
     glm::vec3 m_AABB_extents;
+    glm::vec3 m_AABB_center;
 };

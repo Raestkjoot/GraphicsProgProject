@@ -7,7 +7,7 @@
 #include <glm/gtx/string_cast.hpp>
 #include <iostream>
 
-Scene::Scene()
+Scene::Scene() : m_AABBMinBounds({ 0.0f }), m_AABBMaxBounds({ 0.0f }), m_AABBCenter({ 0.0f }), m_AABBExtents({ 0.0f })
 {
 }
 
@@ -35,10 +35,13 @@ bool Scene::AddSceneNode(std::shared_ptr<SceneNode> node)
     m_nodes[node->GetName()] = node;
     node->SetOwnerScene(this);
 
-    glm::vec3 newNodeAABBExtents = node->GetAabbExtents();
-    m_AABBExtents.x = std::max(m_AABBExtents.x, newNodeAABBExtents.x);
-    m_AABBExtents.y = std::max(m_AABBExtents.y, newNodeAABBExtents.y);
-    m_AABBExtents.z = std::max(m_AABBExtents.z, newNodeAABBExtents.z);
+    glm::vec3 nodeMin = node->GetAabbBounds().GetMin();
+    glm::vec3 nodeMax = node->GetAabbBounds().GetMax();
+    m_AABBMinBounds = glm::min(nodeMin, m_AABBMinBounds);
+    m_AABBMaxBounds = glm::max(nodeMax, m_AABBMaxBounds);
+
+    m_AABBExtents = (m_AABBMaxBounds - m_AABBMinBounds) * 0.5f;
+    m_AABBCenter = m_AABBMinBounds + m_AABBExtents;
 
     return true;
 }
@@ -77,6 +80,12 @@ void Scene::AcceptVisitor(SceneVisitor& visitor) const
     {
         pair.second->AcceptVisitor(visitor);
     }
+}
+
+void Scene::GetAABBBounds(glm::vec3& min, glm::vec3& max)
+{
+    min = m_AABBMinBounds;
+    max = m_AABBMaxBounds;
 }
 
 glm::vec3 Scene::GetAABBExtents() const

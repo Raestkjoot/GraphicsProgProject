@@ -25,9 +25,13 @@ public:
     void AcceptVisitor(SceneVisitor& visitor);
     void AcceptVisitor(SceneVisitor& visitor) const;
 
+    void GetAABBBounds(glm::vec3& min, glm::vec3& max);
     glm::vec3 GetAABBExtents() const;
 
 private:
     std::unordered_map<std::string, std::shared_ptr<SceneNode>> m_nodes;
     glm::vec3 m_AABBExtents;
+    glm::vec3 m_AABBMinBounds;
+    glm::vec3 m_AABBMaxBounds;
+    glm::vec3 m_AABBCenter;
 };

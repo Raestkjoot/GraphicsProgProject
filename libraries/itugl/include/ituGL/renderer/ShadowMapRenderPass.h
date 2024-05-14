@@ -29,7 +29,7 @@ public:
     ShadowMapRenderPass(std::shared_ptr<Light> light, std::shared_ptr<const Material> material, int drawcallCollectionIndex = 0);
 
     void SetVolume(glm::vec3 volumeCenter, glm::vec3 volumeSize);
-    void SetSceneExtents(glm::vec3 sceneExtents);
+    void SetSceneAABBBounds(const glm::vec3& min, const glm::vec3& max);
 
     void Render() override;
 
@@ -49,6 +49,10 @@ private:
 
     glm::vec3 m_volumeCenter;
     glm::vec3 m_volumeSize;
-    glm::vec3 m_sceneAABBExtents;
     float m_shadowBufferSize;
+
+    glm::vec3 m_sceneAABBMin;
+    glm::vec3 m_sceneAABBMax;
+    glm::vec3 m_sceneAABBExtents;
+    glm::vec3 m_sceneAABBCenter;
 };

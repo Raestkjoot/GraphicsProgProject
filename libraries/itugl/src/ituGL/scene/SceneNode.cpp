@@ -3,20 +3,20 @@
 #include <ituGL/scene/Scene.h>
 #include <ituGL/scene/Transform.h>
 
-SceneNode::SceneNode(const std::string& name) : SceneNode(name, std::make_shared<Transform>(), glm::vec3(1.0f))
+SceneNode::SceneNode(const std::string& name) : SceneNode(name, std::make_shared<Transform>(), glm::vec3(0.0f), glm::vec3(1.0f))
 {
 }
 
-SceneNode::SceneNode(const std::string& name, glm::vec3 AABB_extents) : SceneNode(name, std::make_shared<Transform>(), AABB_extents)
+SceneNode::SceneNode(const std::string& name, glm::vec3 aabbBoundsMin, glm::vec3 aabbBoundsMax) 
+    : SceneNode(name, std::make_shared<Transform>(), aabbBoundsMin, aabbBoundsMax)
 {
 }
 
-SceneNode::SceneNode(const std::string& name, std::shared_ptr<Transform> transform) : SceneNode(name, transform, glm::vec3(1.0f))
+SceneNode::SceneNode(const std::string& name, std::shared_ptr<Transform> transform, glm::vec3 aabbBoundsMin, glm::vec3 aabbBoundsMax) 
+    : m_scene(nullptr), m_name(name), m_transform(transform)
 {
-}
-
-SceneNode::SceneNode(const std::string& name, std::shared_ptr<Transform> transform, glm::vec3 AABB_extents) : m_scene(nullptr), m_name(name), m_transform(transform), m_AABB_extents(AABB_extents)
-{
+    m_AABB_extents = (aabbBoundsMax - aabbBoundsMin) * 0.5f;
+    m_AABB_center = aabbBoundsMin + m_AABB_extents;
 }
 
 SceneNode::~SceneNode()
@@ -76,7 +76,7 @@ SphereBounds SceneNode::GetSphereBounds() const
 
 AabbBounds SceneNode::GetAabbBounds() const
 {
-    return AabbBounds(glm::vec3(m_transform->GetTranslation()), glm::vec3(0.0f)); // use world translation?
+    return AabbBounds(m_AABB_center, m_AABB_extents); // use world translation?
 }
 
 BoxBounds SceneNode::GetBoxBounds() const
@@ -86,7 +86,7 @@ BoxBounds SceneNode::GetBoxBounds() const
 
 glm::vec3 SceneNode::GetAabbExtents() const
 {
-    return m_transform->GetTranslation() + m_AABB_extents;
+    return m_AABB_extents;
 }
 
 void SceneNode::AcceptVisitor(SceneVisitor& visitor)

@@ -9,8 +9,8 @@ class SceneModel : public SceneNode//, public Renderable
 {
 public:
     SceneModel(const std::string& name, std::shared_ptr<Model> model);
-    SceneModel(const std::string& name, std::shared_ptr<Model> model, glm::vec3 AABB_extents);
-    SceneModel(const std::string& name, std::shared_ptr<Model> model, std::shared_ptr<Transform> transform);
+    SceneModel(const std::string& name, std::shared_ptr<Model> model, glm::vec3 aabbBoundsMin, glm::vec3 aabbBoundsMax);
+    SceneModel(const std::string& name, std::shared_ptr<Model> model, std::shared_ptr<Transform> transform, glm::vec3 aabbBoundsMin, glm::vec3 aabbBoundsMax);
 
     std::shared_ptr<Model> GetModel() const;
     void SetModel(std::shared_ptr<Model> model);
