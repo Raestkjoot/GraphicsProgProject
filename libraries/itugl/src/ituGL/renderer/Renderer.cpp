@@ -27,6 +27,9 @@ Renderer::Renderer(DeviceGL& device)
     device.EnableFeature(GL_CULL_FACE);
     device.EnableFeature(GL_TEXTURE_CUBE_MAP_SEAMLESS);
     device.SetVSyncEnabled(true);
+
+    m_debugRenderPass = std::make_unique<DebugRenderPass>();
+    m_debugRenderPass->SetRenderer(this);
 }
 
 bool Renderer::HasCamera() const
@@ -79,7 +82,15 @@ void Renderer::Render()
         pass->Render();
     }
 
+    SetCurrentFramebuffer(m_debugRenderPass->GetTargetFramebuffer());
+    m_debugRenderPass->Render();
+
     Reset();
+}
+
+DebugRenderPass& Renderer::GetDebugRenderPass()
+{
+    return *m_debugRenderPass;
 }
 
 void Renderer::Reset()

@@ -23,6 +23,7 @@
 #include <ituGL/renderer/DeferredRenderPass.h>
 #include <ituGL/renderer/ShadowMapRenderPass.h>
 #include <ituGL/renderer/PostFXRenderPass.h>
+#include <ituGL/renderer/DebugRenderPass.h>
 #include <ituGL/scene/RendererSceneVisitor.h>
 
 #include <ituGL/scene/Transform.h>
@@ -95,7 +96,7 @@ void ShadowApplication::InitializeCamera()
 {
 	std::shared_ptr<Camera> camera = std::make_shared<Camera>();
 	camera->SetViewMatrix(glm::vec3(-2, 1, -2), glm::vec3(0, 0.5f, 0), glm::vec3(0, 1, 0));
-	camera->SetPerspectiveProjectionMatrix(1.0f, 1.0f, 0.1f, 200.0f);
+	camera->SetPerspectiveProjectionMatrix(1.0f, 1.0f, 0.1f, 500.0f);
 	std::shared_ptr<SceneCamera> sceneCamera = std::make_shared<SceneCamera>("camera", camera);
 	m_scene.AddSceneNode(sceneCamera);
 	m_cameraController.SetCamera(sceneCamera);

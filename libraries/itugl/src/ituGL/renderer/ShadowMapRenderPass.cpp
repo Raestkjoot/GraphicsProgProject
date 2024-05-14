@@ -32,7 +32,7 @@ void ShadowMapRenderPass::SetSceneExtents(glm::vec3 sceneExtents)
 {
     // Hardcoded because deadline. But, we know the scene starts from 0 and grows in positive x and z,
     // so we can just assume the aabb borders go from 0 - extents*2
-    m_sceneAABBExtents = sceneExtents * 2.0f;
+    m_sceneAABBExtents = sceneExtents;
 }
 
 void ShadowMapRenderPass::InitFramebuffer()
@@ -169,10 +169,15 @@ void ShadowMapRenderPass::InitLightCamera(Camera& lightCamera, const Camera& cur
 
     // Tight near-far method:
     auto sceneLightSpace = GetSceneAABBLightSpace(lightView);
+    
+    Renderer& renderer = GetRenderer();
+    DebugRenderPass& debugRenderer = renderer.GetDebugRenderPass();
+    debugRenderer.AddAABB(glm::vec3(0.0f), m_sceneAABBExtents, 0xffffffff);
+
     ComputeNearAndFar(min.z, max.z, glm::vec2(min.x, min.y), glm::vec2(max.x, max.y), sceneLightSpace);
     // Naive method:
-    //min.z = -m_sceneAABBExtents.z;
-    //max.z = m_sceneAABBExtents.z;
+    // min.z = -m_sceneAABBExtents.z;
+    // max.z = m_sceneAABBExtents.z;
 
     // Projection matrix
     switch (m_light->GetType())

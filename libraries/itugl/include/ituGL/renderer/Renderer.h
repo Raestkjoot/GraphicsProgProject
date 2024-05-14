@@ -2,6 +2,7 @@
 
 #include <ituGL/core/DeviceGL.h>
 #include <ituGL/renderer/RenderPass.h>
+#include <ituGL/renderer/DebugRenderPass.h>
 #include <ituGL/geometry/Drawcall.h>
 #include <ituGL/geometry/Mesh.h>
 #include <glm/mat4x4.hpp>
@@ -81,6 +82,8 @@ public:
 
     void Render();
 
+    DebugRenderPass& GetDebugRenderPass();
+
 private:
     void Reset();
 
@@ -108,4 +111,6 @@ private:
     Mesh m_fullscreenMesh;
 
     std::vector<std::unique_ptr<RenderPass>> m_passes;
+
+    std::unique_ptr<DebugRenderPass> m_debugRenderPass;
 };
