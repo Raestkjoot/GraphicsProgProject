@@ -30,12 +30,13 @@ public:
 
     void SetVolume(glm::vec3 volumeCenter, glm::vec3 volumeSize);
     void SetSceneExtents(glm::vec3 sceneExtents);
+    void SetCascadeLevels(float viewCameraFarPlane);
 
     void Render() override;
 
 private:
     void InitFramebuffer();
-    void InitLightCamera(Camera& lightCamera, const Camera& curCamera);
+    void InitLightCamera(Camera& lightCamera, const Camera& viewCamera);
     void ComputeNearAndFar(float& near, float& far, glm::vec2 lightFrustMin, glm::vec2 lightFrustMax, std::vector<glm::vec3> sceneAABB);
     std::vector<glm::vec3> GetSceneAABBLightSpace(const glm::mat4& lightView);
 
@@ -51,4 +52,5 @@ private:
     glm::vec3 m_volumeSize;
     glm::vec3 m_sceneAABBExtents;
     float m_shadowBufferSize;
+    std::vector<float> m_cascadeLevels;
 };

@@ -6,6 +6,7 @@
 
 class TextureObject;
 class Texture2DObject;
+class Texture2DArrayObject;
 
 // Abstract OpenGL object that encapsulates a Framebuffer
 class FramebufferObject : public Object
@@ -28,8 +29,9 @@ public:
     static void Unbind();
     static void Unbind(Target target);
 
-    void SetTexture(Target target, Attachment attachment, const TextureObject& texture, int level = 0);
+    void SetTexture(Target target, Attachment attachment, const TextureObject& texture, int level = 0, int layer = 0);
     void SetTexture(Target target, Attachment attachment, const Texture2DObject& texture, int level = 0);
+    void SetTexture(Target target, Attachment attachment, const Texture2DArrayObject& texture, int level = 0, int layer = 0);
 
     void SetDrawBuffers(std::span<const Attachment> attachments);
 

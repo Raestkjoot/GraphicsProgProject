@@ -5,6 +5,7 @@
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
 #include <memory>
+#include <vector>
 
 class TextureObject;
 
@@ -42,22 +43,24 @@ public:
 
     std::shared_ptr<const TextureObject> GetShadowMap() const;
     void SetShadowMap(std::shared_ptr<const TextureObject> shadowMap);
-    virtual bool CreateShadowMap(glm::ivec2 resolution);
+    virtual bool CreateShadowMap(glm::ivec2 resolution, unsigned int numOfCascades);
 
-    glm::mat4 GetShadowMatrix() const;
-    void SetShadowMatrix(const glm::mat4& matrix);
+    std::vector<glm::mat4> GetShadowMatrix() const;
+    void SetShadowMatrix(size_t index, const glm::mat4& matrix);
 
     float GetShadowBias() const;
     void SetShadowBias(float bias);
 
     glm::vec2 GetShadowMapResolution() const;
     void SetShadowMapResolution(glm::vec2 resolution);
+    unsigned int GetNumOfCascades() const;
 
 protected:
     glm::vec3 m_color;
     float m_intensity;
     std::shared_ptr<const TextureObject> m_shadowMap;
-    glm::mat4 m_shadowMatrix;
+    std::vector<glm::mat4> m_shadowMatrix;
     float m_shadowBias;
     glm::ivec2 m_shadowMapResolution;
+    unsigned int m_numOfCascades;
 };

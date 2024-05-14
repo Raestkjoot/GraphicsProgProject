@@ -7,7 +7,7 @@ uniform vec4 LightAttenuation;
 
 uniform bool LightShadowEnabled;
 uniform sampler2DShadow LightShadowMap;
-uniform mat4 LightShadowMatrix;
+uniform mat4 LightShadowMatrix[3];
 uniform float LightShadowBias;
 
 float ComputeDistanceAttenuation(vec3 position)
@@ -43,6 +43,7 @@ float ComputeShadow(vec3 position)
 	if (LightShadowEnabled)
 	{
 		// Transform position to light space
+		// TODO: LightShadowMatrix[numOfCascades]
 		vec4 lightSpacePosition = LightShadowMatrix * vec4(position, 1.0f);
 
 		// Homogeneous coordinates

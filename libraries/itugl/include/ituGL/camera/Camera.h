@@ -41,6 +41,7 @@ public:
 
     std::vector<glm::vec4> GetFrustumCornersWorldSpace() const;
     std::vector<glm::vec3> GetFrustumCorners3D() const;
+    float GetFarPlane() const;
 
 
 private:
@@ -49,4 +50,6 @@ private:
 
     // The projection matrix (from view space to clip space)
     glm::mat4 m_projMatrix;
+
+    float m_farPlane;
 };

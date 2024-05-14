@@ -35,6 +35,11 @@ void ShadowMapRenderPass::SetSceneExtents(glm::vec3 sceneExtents)
     m_sceneAABBExtents = sceneExtents * 2.0f;
 }
 
+void ShadowMapRenderPass::SetCascadeLevels(float viewCameraFarPlane)
+{
+    m_cascadeLevels = std::vector<float>{ viewCameraFarPlane / 25.0f, viewCameraFarPlane / 10.0f, viewCameraFarPlane / 2.0f };
+}
+
 void ShadowMapRenderPass::InitFramebuffer()
 {
     std::shared_ptr<FramebufferObject> targetFramebuffer = std::make_shared<FramebufferObject>();
@@ -43,7 +48,8 @@ void ShadowMapRenderPass::InitFramebuffer()
 
     std::shared_ptr<const TextureObject> shadowMap = m_light->GetShadowMap();
     assert(shadowMap);
-    targetFramebuffer->SetTexture(FramebufferObject::Target::Draw, FramebufferObject::Attachment::Depth, *shadowMap);
+    // Set depth
+    targetFramebuffer->SetTexture(FramebufferObject::Target::Draw, FramebufferObject::Attachment::Depth, *shadowMap, m_light->GetNumOfCascades());
 
     FramebufferObject::Unbind();
 
@@ -74,28 +80,33 @@ void ShadowMapRenderPass::Render()
     // Backup current camera and use to clip light shadow projection.
     const Camera& currentCamera = renderer.GetCurrentCamera();
 
-    // Set up light as the camera
-    Camera lightCamera;
-    InitLightCamera(lightCamera, currentCamera);
-    renderer.SetCurrentCamera(lightCamera);
-
-    // for all drawcalls
-    bool first = true;
-    for (const Renderer::DrawcallInfo& drawcallInfo : drawcallCollection)
+    // This seems terribly inefficient
+    // TODO: See if there is a better way to do this.
+    for (size_t i = 0; i < m_cascadeLevels.size() + 1; i++)
     {
-        // Bind the vao
-        drawcallInfo.vao.Bind();
+        // Set up light as the camera
+        Camera lightCamera;
+        InitLightCamera(lightCamera, currentCamera);
+        renderer.SetCurrentCamera(lightCamera);
 
-        // Set up object matrix
-        renderer.UpdateTransforms(shaderProgram, drawcallInfo.worldMatrixIndex, first);
+        // for all drawcalls
+        bool first = true;
+        for (const Renderer::DrawcallInfo& drawcallInfo : drawcallCollection)
+        {
+            // Bind the vao
+            drawcallInfo.vao.Bind();
 
-        // Render drawcall
-        drawcallInfo.drawcall.Draw();
+            // Set up object matrix
+            renderer.UpdateTransforms(shaderProgram, drawcallInfo.worldMatrixIndex, first);
 
-        first = false;
+            // Render drawcall
+            drawcallInfo.drawcall.Draw();
+
+            first = false;
+        }
+
+        m_light->SetShadowMatrix(i, lightCamera.GetViewProjectionMatrix());
     }
-
-    m_light->SetShadowMatrix(lightCamera.GetViewProjectionMatrix());
 
     // Restore viewport
     renderer.GetDevice().SetViewport(currentViewport.x, currentViewport.y, currentViewport.z, currentViewport.w);

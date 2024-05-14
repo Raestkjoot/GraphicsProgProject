@@ -1,6 +1,7 @@
 #include <ituGL/texture/FramebufferObject.h>
 
 #include <ituGL/texture/Texture2DObject.h>
+#include <ituGL/texture/Texture2DArrayObject.h>
 #include <cassert>
 
 std::shared_ptr<const FramebufferObject> FramebufferObject::s_defaultFramebuffer(std::make_shared<FramebufferObject>(FramebufferObject(Object::NullHandle)));
@@ -53,12 +54,15 @@ std::shared_ptr<const FramebufferObject> FramebufferObject::GetDefault()
     return FramebufferObject::s_defaultFramebuffer;
 }
 
-void FramebufferObject::SetTexture(Target target, Attachment attachment, const TextureObject& texture, int level)
+void FramebufferObject::SetTexture(Target target, Attachment attachment, const TextureObject& texture, int level, int layer)
 {
     switch (texture.GetTarget())
     {
     case TextureObject::Texture2D:
         SetTexture(target, attachment, static_cast<const Texture2DObject&>(texture), level);
+        break;
+    case TextureObject::Texture2DArray:
+        SetTexture(target, attachment, static_cast<const Texture2DArrayObject&>(texture), level, layer);
         break;
     default:
         assert(false);
@@ -69,6 +73,12 @@ void FramebufferObject::SetTexture(Target target, Attachment attachment, const T
 void FramebufferObject::SetTexture(Target target, Attachment attachment, const Texture2DObject& texture, int level)
 {
     glFramebufferTexture2D(static_cast<GLenum>(target), static_cast<GLenum>(attachment), texture.GetTarget(), texture.GetHandle(), level);
+}
+
+
+void FramebufferObject::SetTexture(Target target, Attachment attachment, const Texture2DArrayObject& texture, int level, int layer)
+{
+    glFramebufferTexture3D(static_cast<GLenum>(target), static_cast<GLenum>(attachment), texture.GetTarget(), texture.GetHandle(), level, layer);
 }
 
 void FramebufferObject::SetDrawBuffers(std::span<const Attachment> attachments)

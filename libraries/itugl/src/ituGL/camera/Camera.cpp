@@ -16,6 +16,7 @@ void Camera::SetViewMatrix(const glm::vec3& position, const glm::vec3& lookAt, c
 void Camera::SetPerspectiveProjectionMatrix(float fov, float aspect, float near, float far)
 {
     m_projMatrix = glm::perspective(fov, aspect, near, far);
+    m_farPlane = far;
 }
 
 void Camera::SetOrthographicProjectionMatrix(const glm::vec3& min, const glm::vec3& max)
@@ -99,4 +100,9 @@ std::vector<glm::vec3> Camera::GetFrustumCorners3D() const
     }
 
     return retval;
+}
+
+float Camera::GetFarPlane() const
+{
+    return m_farPlane;
 }

@@ -145,7 +145,7 @@ Renderer::UpdateLightsFunction Renderer::GetDefaultUpdateLightsFunction(const Sh
     ShaderProgram::Location lightAttenuationLocation = shaderProgram.GetUniformLocation("LightAttenuation");
     ShaderProgram::Location LightShadowEnabledLocation = shaderProgram.GetUniformLocation("LightShadowEnabled");
     ShaderProgram::Location lightShadowMapLocation = shaderProgram.GetUniformLocation("LightShadowMap"); // TODO: Shadow Maps (plural)
-    ShaderProgram::Location lightShadowMatrixLocation = shaderProgram.GetUniformLocation("LightShadowMatrix");
+    ShaderProgram::Location lightShadowMatrixLocation = shaderProgram.GetUniformLocation("LightShadowMatrix"); // TODO: ShadowMatrix per cascade
     ShaderProgram::Location lightShadowBiasLocation = shaderProgram.GetUniformLocation("LightShadowBias");
 
     return [=](const ShaderProgram& shaderProgram, std::span<const Light* const> lights, unsigned int& lightIndex) -> bool

@@ -1,6 +1,9 @@
 #include <ituGL/lighting/Light.h>
 
 #include <ituGL/texture/Texture2DObject.h>
+#include <ituGL/texture/Texture2DArrayObject.h>
+
+#include <vector>
 
 Light::Light() : m_color(1.0f), m_intensity(1.0f)
 {
@@ -73,31 +76,34 @@ void Light::SetShadowMap(std::shared_ptr<const TextureObject> shadowMap)
     m_shadowMap = shadowMap;
 }
 
-bool Light::CreateShadowMap(glm::ivec2 resolution)
+bool Light::CreateShadowMap(glm::ivec2 resolution, unsigned int numOfCascades)
 {
     assert(!m_shadowMap);
-    std::shared_ptr<Texture2DObject> shadowMap = std::make_shared<Texture2DObject>();
+    std::shared_ptr<Texture2DArrayObject> shadowMap = std::make_shared<Texture2DArrayObject>();
     shadowMap->Bind();
-    shadowMap->SetImage(0, resolution.x, resolution.y, TextureObject::FormatDepth, TextureObject::InternalFormatDepth32);
+    shadowMap->SetImage(0, resolution.x, resolution.y, numOfCascades, TextureObject::FormatDepth, TextureObject::InternalFormatDepth32);
     shadowMap->SetParameter(TextureObject::ParameterEnum::MinFilter, GL_LINEAR);
     shadowMap->SetParameter(TextureObject::ParameterEnum::MagFilter, GL_LINEAR);
     shadowMap->SetParameter(TextureObject::ParameterEnum::WrapS, GL_CLAMP_TO_BORDER);
     shadowMap->SetParameter(TextureObject::ParameterEnum::WrapT, GL_CLAMP_TO_BORDER);
     glm::vec4 borderColor(1.0f);
     shadowMap->SetParameter(TextureObject::ParameterColor::BorderColor, std::span<float, 4>(&borderColor[0], &borderColor[0] + 4));
+
     m_shadowMap = shadowMap;
+    m_numOfCascades = numOfCascades;
     SetShadowMapResolution(resolution);
+
     return true;
 }
 
-glm::mat4 Light::GetShadowMatrix() const
+std::vector<glm::mat4> Light::GetShadowMatrix() const
 {
     return m_shadowMatrix;
 }
 
-void Light::SetShadowMatrix(const glm::mat4& matrix)
+void Light::SetShadowMatrix(size_t index, const glm::mat4& matrix)
 {
-    m_shadowMatrix = matrix;
+    m_shadowMatrix[index] = matrix;
 }
 
 float Light::GetShadowBias() const
@@ -120,4 +126,9 @@ glm::vec2 Light::GetShadowMapResolution() const
 void Light::SetShadowMapResolution(glm::vec2 resolution)
 {
     m_shadowMapResolution = resolution;
+}
+
+unsigned int Light::GetNumOfCascades() const
+{
+    return m_numOfCascades;
 }
