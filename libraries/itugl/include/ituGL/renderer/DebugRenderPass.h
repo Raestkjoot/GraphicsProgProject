@@ -4,6 +4,7 @@
 #include <ituGL/geometry/VertexBufferObject.h>
 #include <ituGL/geometry/VertexArrayObject.h>
 #include <ituGL/shader/ShaderProgram.h>
+#include <ituGL/core/Color.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -19,7 +20,7 @@ class FramebufferObject;
 struct DebugVertex
 {
     glm::vec3 pos;
-    unsigned int color;
+    Color color;
 };
 
 class DebugRenderPass : public RenderPass
@@ -30,17 +31,16 @@ public:
 
     void Render() override;
 
-    void AddAABB(const glm::vec3& center, const glm::vec3& extents, unsigned int color);
-    void DrawOBB3D(const glm::vec3& center, const glm::vec3& extents, const glm::quat& rotation, unsigned int color);
-    void DrawFrustum(const glm::mat4x4& viewProjectionMatrix, unsigned int color);
-    void DrawLine3D(const glm::vec3& from, const glm::vec3& to, unsigned int color);
+    void DrawAABB(const glm::vec3& center, const glm::vec3& extents, Color color);
+    void DrawOBB3D(const glm::vec3& center, const glm::vec3& extents, const glm::quat& rotation, Color color);
+    void DrawMinMaxBox(const glm::vec3& min, const glm::vec3& max, Color color);
+    void DrawArbitraryBox(const std::vector<glm::vec3>& corner, Color color);
+    void DrawFrustum(const glm::mat4x4& viewProjectionMatrix, Color color);
+    void DrawMatrix(const glm::mat4x4& matrix, float scale);
+    void DrawLine3D(const glm::vec3& from, const glm::vec3& to, Color color);
     glm::vec3 UnProject(const glm::vec3& point, const glm::mat4x4& m);
 
 private:
-    //VertexBufferObject m_vbo;
-    //VertexArrayObject m_vao;
-    //ElementBufferObject m_ebo;
-
     std::vector<DebugVertex> m_points;
 
     VertexArrayObject m_vao;

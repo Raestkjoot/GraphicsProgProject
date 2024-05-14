@@ -315,16 +315,17 @@ void ShadowApplication::InitializeModels()
 	int distance = 25;
 	for (unsigned int x = 0u; x < terrainGridSize / distance; ++x) {
 		for (unsigned int y = 0u; y < terrainGridSize / distance; ++y) {
+			// Get name and position
 			std::string name("tree ");
 			name += std::to_string(y * distance + x);
 			glm::ivec2 treeCoords(distance * x + distance * GetRandomRange(-0.4f, 0.4f), distance * y + distance * GetRandomRange(-0.4f, 0.4f));
 			float height = m_heightmap[treeCoords.y * (terrainGridSize + 1) + treeCoords.x];
 			glm::vec3 position(treeCoords.x * indexMultiplier, height, treeCoords.y * indexMultiplier);
-
+			//
 			treeAABBMin = position - treeAABBExtents;
 			treeAABBMax = position + treeAABBExtents;
 			std::shared_ptr<SceneModel> sceneModel = std::make_shared<SceneModel>(name, treeModel, treeAABBMin, treeAABBMax);
-
+			//
 			sceneModel->GetTransform()->SetTranslation(position);
 			m_scene.AddSceneNode(sceneModel);
 		}
