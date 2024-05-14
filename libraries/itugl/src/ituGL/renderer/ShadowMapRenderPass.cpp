@@ -69,7 +69,7 @@ void ShadowMapRenderPass::Render()
     device.GetViewport(currentViewport.x, currentViewport.y, currentViewport.z, currentViewport.w);
 
     // Set viewport to shadow map texture size
-    device.SetViewport(0, 0, m_light->GetShadowMapResolution().x, m_light->GetShadowMapResolution().x);
+    device.SetViewport(0, 0, static_cast<GLsizei>(m_light->GetShadowMapResolution().x), static_cast<GLsizei>(m_light->GetShadowMapResolution().y));
 
     // Backup current camera and use to clip light shadow projection.
     const Camera& currentCamera = renderer.GetCurrentCamera();
@@ -189,7 +189,7 @@ void ShadowMapRenderPass::InitLightCamera(Camera& lightCamera, const Camera& cur
 void ShadowMapRenderPass::ComputeNearAndFar(float& near, float& far, glm::vec2 lightFrustumMin, glm::vec2 lightFrustumMax, std::vector<glm::vec3> sceneAABBLightSpace)
 {
     near = std::numeric_limits<float>::max();
-    far = -std::numeric_limits<float>::max();
+    far = std::numeric_limits<float>::lowest();
 
     Triangle triangles[16];
 
