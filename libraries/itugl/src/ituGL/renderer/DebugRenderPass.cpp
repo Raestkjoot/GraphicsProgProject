@@ -11,11 +11,6 @@
 #include <fstream>
 #include <sstream>
 
-#undef min
-
-void DrawLine(std::vector<DebugVertex>& points, glm::vec3 from, glm::vec3 to, unsigned int color);
-
-
 void LoadAndCompileShader(Shader& shader, const char* path)
 {
     // Open the file for reading
@@ -146,8 +141,92 @@ void DebugRenderPass::AddAABB(const glm::vec3& center, const glm::vec3& extents,
     m_points.push_back({ { v1.x, v1.y, v1.z }, color });
 }
 
-void DrawLine(std::vector<DebugVertex>& points, const glm::vec3& from, const glm::vec3& to, unsigned int color)
+void DebugRenderPass::DrawOBB3D(const glm::vec3& center, const glm::vec3& extents, const glm::quat& rotation, unsigned int color)
 {
-    points.push_back(DebugVertex(from, color));
-    points.push_back(DebugVertex(to, color));
+    glm::vec3 corners[8] = {
+        center + rotation * glm::vec3(-extents.x, -extents.y, -extents.z),
+        center + rotation * glm::vec3(extents.x, -extents.y, -extents.z),
+        center + rotation * glm::vec3(extents.x, -extents.y,  extents.z),
+        center + rotation * glm::vec3(-extents.x, -extents.y,  extents.z),
+        center + rotation * glm::vec3(-extents.x,  extents.y, -extents.z),
+        center + rotation * glm::vec3(extents.x,  extents.y, -extents.z),
+        center + rotation * glm::vec3(extents.x,  extents.y,  extents.z),
+        center + rotation * glm::vec3(-extents.x,  extents.y,  extents.z)
+    };
+
+    // Bottom
+    m_points.push_back({ corners[0], color });
+    m_points.push_back({ corners[1], color });
+    m_points.push_back({ corners[1], color });
+    m_points.push_back({ corners[2], color });
+    m_points.push_back({ corners[2], color });
+    m_points.push_back({ corners[3], color });
+    m_points.push_back({ corners[3], color });
+    m_points.push_back({ corners[0], color });
+
+    // Top
+    m_points.push_back({ corners[4], color });
+    m_points.push_back({ corners[5], color });
+    m_points.push_back({ corners[5], color });
+    m_points.push_back({ corners[6], color });
+    m_points.push_back({ corners[6], color });
+    m_points.push_back({ corners[7], color });
+    m_points.push_back({ corners[7], color });
+    m_points.push_back({ corners[4], color });
+
+    // Vertical edges
+    m_points.push_back({ corners[0], color });
+    m_points.push_back({ corners[4], color });
+    m_points.push_back({ corners[1], color });
+    m_points.push_back({ corners[5], color });
+    m_points.push_back({ corners[2], color });
+    m_points.push_back({ corners[6], color });
+    m_points.push_back({ corners[3], color });
+    m_points.push_back({ corners[7], color });
+}
+
+void DebugRenderPass::DrawFrustum(const glm::mat4x4& viewProjectionMatrix, unsigned int color)
+{
+    const glm::mat4x4 m = glm::inverse(viewProjectionMatrix);
+
+    const glm::vec3 near0 = UnProject(glm::vec3(-1.0f, -1.0f, 0.0f), m);
+    const glm::vec3 near1 = UnProject(glm::vec3(+1.0f, -1.0f, 0.0f), m);
+    const glm::vec3 near2 = UnProject(glm::vec3(+1.0f, +1.0f, 0.0f), m);
+    const glm::vec3 near3 = UnProject(glm::vec3(-1.0f, +1.0f, 0.0f), m);
+
+    const glm::vec3 far0 = UnProject(glm::vec3(-1.0f, -1.0f, 1.0f), m);
+    const glm::vec3 far1 = UnProject(glm::vec3(+1.0f, -1.0f, 1.0f), m);
+    const glm::vec3 far2 = UnProject(glm::vec3(+1.0f, +1.0f, 1.0f), m);
+    const glm::vec3 far3 = UnProject(glm::vec3(-1.0f, +1.0f, 1.0f), m);
+
+    // Near plane
+    DrawLine3D(near0, near1, color);
+    DrawLine3D(near1, near2, color);
+    DrawLine3D(near2, near3, color);
+    DrawLine3D(near3, near0, color);
+
+    // Far plane
+    DrawLine3D(far0, far1, color);
+    DrawLine3D(far1, far2, color);
+    DrawLine3D(far2, far3, color);
+    DrawLine3D(far3, far0, color);
+
+    // Edges
+    DrawLine3D(near0, far0, color);
+    DrawLine3D(near1, far1, color);
+    DrawLine3D(near2, far2, color);
+    DrawLine3D(near3, far3, color);
+}
+
+void DebugRenderPass::DrawLine3D(const glm::vec3& from, const glm::vec3& to, unsigned int color)
+{
+    m_points.push_back({ from, color });
+    m_points.push_back({ to, color });
+}
+
+glm::vec3 DebugRenderPass::UnProject(const glm::vec3& point, const glm::mat4x4& m)
+{
+    glm::vec4 obj = m * glm::vec4(point, 1.0f);
+    obj /= obj.w;
+    return glm::vec3(obj);
 }
