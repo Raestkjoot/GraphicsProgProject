@@ -115,38 +115,60 @@ void ShadowMapRenderPass::InitLightCamera(Camera& lightCamera, const Camera& cur
     Renderer& renderer = GetRenderer();
     DebugRenderPass& debugRenderer = renderer.GetDebugRenderPass();
 
-    std::vector<glm::vec4> corners = curCamera.GetFrustumCornersWorldSpace();
+    std::vector<glm::vec4> viewCorners = curCamera.GetFrustumCornersWorldSpace();
 
-    glm::vec3 cornerMin = glm::vec3(std::numeric_limits<float>::max());
-    glm::vec3 cornerMax = glm::vec3(std::numeric_limits<float>::lowest());
+    debugRenderer.DrawAABB(m_sceneAABBCenter, m_sceneAABBExtents, Color(1.0f, 1.0f, 1.0f)); // Draw scene AABB
 
-    // Find the volume center
+    // Find the view volume center
     glm::vec3 center(0.0f);
-    std::vector<glm::vec3> corndersV3;
-    for (const auto& v : corners)
+    std::vector<glm::vec3> corndersV3; // debug
+    for (const auto& v : viewCorners)
     {
-        corndersV3.push_back(glm::vec3(v));
         center += glm::vec3(v);
-        cornerMin = glm::min(cornerMin, glm::vec3(v));
-        cornerMax = glm::max(cornerMax, glm::vec3(v));
+
+        corndersV3.push_back(glm::vec3(v)); // debug
     }
-    center /= corners.size();
-    debugRenderer.DrawArbitraryBox(corndersV3, Color(1.0f, 0.0f, 0.0f));
+    center /= viewCorners.size();
+    debugRenderer.DrawArbitraryBox(corndersV3, Color(1.0f, 0.0f, 0.0f)); // Draw view frustum
 
     const auto lightView = glm::lookAt(center, center + m_light->GetDirection(), glm::vec3(0.0f, 1.0f, 0.0f));
     lightCamera.SetViewMatrix(lightView);
+    debugRenderer.DrawMatrix(lightView, center, 20.0f); // Draw center of view frustum
 
-
+    // Compute min and max xy for the light projection matrix
     glm::vec3 min(std::numeric_limits<float>::max());
     glm::vec3 max(std::numeric_limits<float>::lowest());
-    for (const auto& v : corners)
+    for (const auto& v : viewCorners)
     {
+        // This transformation should take the points into light space, where we want to find the xy bounds
         const auto trf = lightView * v;
         min.x = std::min(min.x, trf.x);
         min.y = std::min(min.y, trf.y);
+        min.z = std::min(min.z, trf.z); // can be ignored
         max.x = std::max(max.x, trf.x);
         max.y = std::max(max.y, trf.y);
+        max.z = std::max(max.z, trf.z); // can be ignored
     }
+
+    // DEBUG xy bounds of the light cam
+    float lightCenter = (lightView * glm::vec4(center.x, center.y, center.z, 1.0f)).z;
+    lightCenter /= (lightView * glm::vec4(center.x, center.y, center.z, 1.0f)).w;
+    std::vector<glm::vec4> lightBoundsLightSpace;
+    lightBoundsLightSpace.push_back(glm::vec4(min.x, min.y, lightCenter, 1.0f));
+    lightBoundsLightSpace.push_back(glm::vec4(max.x, min.y, lightCenter, 1.0f));
+    lightBoundsLightSpace.push_back(glm::vec4(min.x, max.y, lightCenter, 1.0f));
+    lightBoundsLightSpace.push_back(glm::vec4(max.x, max.y, lightCenter, 1.0f));
+
+    std::vector<glm::vec3> lightBoundsWorldSpace;
+    auto invLightView = glm::inverse(lightView);
+    for (auto v : lightBoundsLightSpace)
+    {
+        glm::vec3 corn = glm::vec3(invLightView * v);
+        lightBoundsWorldSpace.push_back(corn);
+    }
+
+    debugRenderer.DrawSquare(lightBoundsWorldSpace, Color(0.8f, 0.0f, 0.8f));
+    // DEBUG xy bounds of light bounds END
 
     // Move the Light in Texel-Sized Increments
     float worldUnitsPerTexel = (max.x - min.x) / m_shadowBufferSize;
@@ -160,30 +182,33 @@ void ShadowMapRenderPass::InitLightCamera(Camera& lightCamera, const Camera& cur
 
     // Tight near-far method:
     auto sceneLightSpace = GetSceneAABBLightSpace(lightView);
-    
-    debugRenderer.DrawAABB(m_sceneAABBCenter, m_sceneAABBExtents, Color(1.0f, 1.0f, 1.0f));
-
+    // min max in light space. Passing in z as reference so ComputeNearFar can recalculate those to a tight fit.
     ComputeNearAndFar(min.z, max.z, glm::vec2(min.x, min.y), glm::vec2(max.x, max.y), sceneLightSpace);
 
     // Naive method:
     // min.z = -m_sceneAABBExtents.z;
     // max.z = m_sceneAABBExtents.z;
 
+    // World space?
+    glm::vec4 minWorldSpace = invLightView * glm::vec4(min, 1.0f);
+    glm::vec4 maxWorldSpace = invLightView * glm::vec4(max, 1.0f);
+    minWorldSpace /= minWorldSpace.w;
+    maxWorldSpace /= maxWorldSpace.w;
+
     // Projection matrix
     switch (m_light->GetType())
     {
     case Light::Type::Directional:
         lightCamera.SetOrthographicProjectionMatrix(min, max);
+
         // DEBUG LIGHT CAM START
-        corners = lightCamera.GetFrustumCornersWorldSpace();
+        viewCorners = lightCamera.GetFrustumCornersWorldSpace();
         corndersV3.clear();
-        for (const auto& v : corners)
+        for (const auto& v : viewCorners)
         {
             corndersV3.push_back(glm::vec3(v));
         }
-        debugRenderer.DrawArbitraryBox(corndersV3, Color(0.0f, 1.0f, 0.0f));
-        // DEBUG LIGHT CAM END
-        //debugRenderer.DrawFrustum(lightCamera.GetViewProjectionMatrix(), Color(1.0f, 0.0f, 0.0f));
+        debugRenderer.DrawArbitraryBox(corndersV3, Color(0.0f, 1.0f, 0.0f)); // Draw light frustum
         break;
     default:
         assert(false);
@@ -219,7 +244,7 @@ void ShadowMapRenderPass::ComputeNearAndFar(float& near, float& far, glm::vec2 l
         triangles[0].isCulled = false;
         int triCount = 1;
 
-        // Foreach m in lightFrustum MinMax and dimension
+        // Foreach m in lightFrustum borders: minX, maxX, minY, maxY
         for (int m = 0; m < 4; ++m)
         {
             float edge;
@@ -428,6 +453,7 @@ std::vector<glm::vec3> ShadowMapRenderPass::GetSceneAABBLightSpace(const glm::ma
 }
 
 /*
+    // TODO: Does the worldUnitsPerTexel require world space? See InitLightCamera.
     glm::vec2 worldEdges(std::numeric_limits<float>::max());
     for (const auto& v : corners)
     {

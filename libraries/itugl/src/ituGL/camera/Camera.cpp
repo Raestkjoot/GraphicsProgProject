@@ -100,3 +100,9 @@ std::vector<glm::vec3> Camera::GetFrustumCorners3D() const
 
     return retval;
 }
+
+
+glm::mat4  Camera::GetInvViewProjMatrix() const
+{
+    return glm::inverse(m_projMatrix * m_viewMatrix);
+}

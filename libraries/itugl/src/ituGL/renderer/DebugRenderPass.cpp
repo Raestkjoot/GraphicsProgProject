@@ -227,6 +227,18 @@ void DebugRenderPass::DrawMinMaxBox(const glm::vec3& min, const glm::vec3& max, 
     m_points.push_back({ corners[7], color });
 }
 
+void DebugRenderPass::DrawSquare(const std::vector<glm::vec3>& corners, Color color)
+{
+    m_points.push_back({ corners[0], color });
+    m_points.push_back({ corners[1], color });
+    m_points.push_back({ corners[1], color });
+    m_points.push_back({ corners[2], color });
+    m_points.push_back({ corners[2], color });
+    m_points.push_back({ corners[3], color });
+    m_points.push_back({ corners[3], color });
+    m_points.push_back({ corners[0], color });
+}
+
 void DebugRenderPass::DrawArbitraryBox(const std::vector<glm::vec3>& corners, Color color)
 {
     // Assuming loop of foreach x foreach y foreach z
@@ -260,6 +272,46 @@ void DebugRenderPass::DrawArbitraryBox(const std::vector<glm::vec3>& corners, Co
     m_points.push_back({ corners[6], color });
     m_points.push_back({ corners[5], color });
     m_points.push_back({ corners[7], color });
+}
+
+void DebugRenderPass::DrawArbitraryBoxWithTransformation(const std::vector<glm::vec4>& corners, const glm::mat4& transformMatrix, Color color)
+{
+    // Assuming loop of foreach x foreach y foreach z
+    std::vector<glm::vec3> transformedCorners;
+    for (auto v : corners)
+    {
+        transformedCorners.push_back(glm::vec3(transformMatrix * v));
+    }
+
+    // Bottom
+    m_points.push_back({ transformedCorners[0], color });
+    m_points.push_back({ transformedCorners[1], color });
+    m_points.push_back({ transformedCorners[1], color });
+    m_points.push_back({ transformedCorners[5], color });
+    m_points.push_back({ transformedCorners[5], color });
+    m_points.push_back({ transformedCorners[4], color });
+    m_points.push_back({ transformedCorners[4], color });
+    m_points.push_back({ transformedCorners[0], color });
+
+    // Top
+    m_points.push_back({ transformedCorners[2], color });
+    m_points.push_back({ transformedCorners[3], color });
+    m_points.push_back({ transformedCorners[3], color });
+    m_points.push_back({ transformedCorners[7], color });
+    m_points.push_back({ transformedCorners[7], color });
+    m_points.push_back({ transformedCorners[6], color });
+    m_points.push_back({ transformedCorners[6], color });
+    m_points.push_back({ transformedCorners[2], color });
+
+    // Vertical edges
+    m_points.push_back({ transformedCorners[0], color });
+    m_points.push_back({ transformedCorners[2], color });
+    m_points.push_back({ transformedCorners[1], color });
+    m_points.push_back({ transformedCorners[3], color });
+    m_points.push_back({ transformedCorners[4], color });
+    m_points.push_back({ transformedCorners[6], color });
+    m_points.push_back({ transformedCorners[5], color });
+    m_points.push_back({ transformedCorners[7], color });
 }
 
 void DebugRenderPass::DrawFrustum(const glm::mat4x4& viewProjectionMatrix, Color color)
@@ -299,6 +351,13 @@ void DebugRenderPass::DrawMatrix(const glm::mat4x4& matrix, float scale)
 {
     const glm::vec3 origin = glm::vec3(matrix[3].x, matrix[3].y, matrix[3].z);
 
+    DrawLine3D(origin, origin + (glm::vec3(matrix[0].x, matrix[0].y, matrix[0].z) * scale), Color(1.0f, 0.0f, 0.0f));
+    DrawLine3D(origin, origin + (glm::vec3(matrix[1].x, matrix[1].y, matrix[1].z) * scale), Color(0.0f, 1.0f, 0.0f));
+    DrawLine3D(origin, origin + (glm::vec3(matrix[2].x, matrix[2].y, matrix[2].z) * scale), Color(0.0f, 0.0f, 1.0f));
+}
+
+void DebugRenderPass::DrawMatrix(const glm::mat4x4& matrix, const glm::vec3& origin, float scale)
+{
     DrawLine3D(origin, origin + (glm::vec3(matrix[0].x, matrix[0].y, matrix[0].z) * scale), Color(1.0f, 0.0f, 0.0f));
     DrawLine3D(origin, origin + (glm::vec3(matrix[1].x, matrix[1].y, matrix[1].z) * scale), Color(0.0f, 1.0f, 0.0f));
     DrawLine3D(origin, origin + (glm::vec3(matrix[2].x, matrix[2].y, matrix[2].z) * scale), Color(0.0f, 0.0f, 1.0f));

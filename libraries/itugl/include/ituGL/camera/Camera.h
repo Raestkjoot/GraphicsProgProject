@@ -41,6 +41,7 @@ public:
 
     std::vector<glm::vec4> GetFrustumCornersWorldSpace() const;
     std::vector<glm::vec3> GetFrustumCorners3D() const;
+    glm::mat4 GetInvViewProjMatrix() const;
 
 
 private:

@@ -96,7 +96,7 @@ void ShadowApplication::InitializeCamera()
 {
 	std::shared_ptr<Camera> camera = std::make_shared<Camera>();
 	camera->SetViewMatrix(glm::vec3(-2, 1, -2), glm::vec3(0, 0.5f, 0), glm::vec3(0, 1, 0));
-	camera->SetPerspectiveProjectionMatrix(1.0f, 1.0f, 0.1f, 500.0f);
+	camera->SetPerspectiveProjectionMatrix(2.0f, 1.0f, 0.1f, 100.0f);
 	std::shared_ptr<SceneCamera> sceneCamera = std::make_shared<SceneCamera>("camera", camera);
 	m_scene.AddSceneNode(sceneCamera);
 	m_cameraController.SetCamera(sceneCamera);

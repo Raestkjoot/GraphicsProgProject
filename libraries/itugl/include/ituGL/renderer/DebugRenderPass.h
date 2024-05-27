@@ -34,9 +34,12 @@ public:
     void DrawAABB(const glm::vec3& center, const glm::vec3& extents, Color color);
     void DrawOBB3D(const glm::vec3& center, const glm::vec3& extents, const glm::quat& rotation, Color color);
     void DrawMinMaxBox(const glm::vec3& min, const glm::vec3& max, Color color);
+    void DrawSquare(const std::vector<glm::vec3>& corners, Color color);
     void DrawArbitraryBox(const std::vector<glm::vec3>& corner, Color color);
+    void DrawArbitraryBoxWithTransformation(const std::vector<glm::vec4>& corners, const glm::mat4& transformMatrix, Color color);
     void DrawFrustum(const glm::mat4x4& viewProjectionMatrix, Color color);
     void DrawMatrix(const glm::mat4x4& matrix, float scale);
+    void DrawMatrix(const glm::mat4x4& matrix, const glm::vec3& origin, float scale);
     void DrawLine3D(const glm::vec3& from, const glm::vec3& to, Color color);
     glm::vec3 UnProject(const glm::vec3& point, const glm::mat4x4& m);
 
