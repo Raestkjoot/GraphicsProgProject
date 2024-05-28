@@ -358,6 +358,7 @@ void DebugRenderPass::DrawMatrix(const glm::mat4x4& matrix, float scale)
 
 void DebugRenderPass::DrawMatrix(const glm::mat4x4& matrix, const glm::vec3& origin, float scale)
 {
+    // Seems like z is inverted or something? Anyways, just use glm::inverse before passing in the matrix for now.
     DrawLine3D(origin, origin + (glm::vec3(matrix[0].x, matrix[0].y, matrix[0].z) * scale), Color(1.0f, 0.0f, 0.0f));
     DrawLine3D(origin, origin + (glm::vec3(matrix[1].x, matrix[1].y, matrix[1].z) * scale), Color(0.0f, 1.0f, 0.0f));
     DrawLine3D(origin, origin + (glm::vec3(matrix[2].x, matrix[2].y, matrix[2].z) * scale), Color(0.0f, 0.0f, 1.0f));

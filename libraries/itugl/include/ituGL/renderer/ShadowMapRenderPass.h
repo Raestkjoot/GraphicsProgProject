@@ -37,6 +37,7 @@ private:
     void InitFramebuffer();
     void InitLightCamera(Camera& lightCamera, const Camera& curCamera);
     void ComputeNearAndFar(float& near, float& far, glm::vec2 lightFrustMin, glm::vec2 lightFrustMax, std::vector<glm::vec3> sceneAABB);
+    void ComputeNearAndFarNoClip(float& near, float& far, std::vector<glm::vec3> sceneAABB);
     std::vector<glm::vec3> GetSceneAABBLightSpace(const glm::mat4& lightView);
 
 

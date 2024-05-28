@@ -115,25 +115,22 @@ void ShadowMapRenderPass::InitLightCamera(Camera& lightCamera, const Camera& cur
     Renderer& renderer = GetRenderer();
     DebugRenderPass& debugRenderer = renderer.GetDebugRenderPass();
 
-    std::vector<glm::vec4> viewCorners = curCamera.GetFrustumCornersWorldSpace();
-
     debugRenderer.DrawAABB(m_sceneAABBCenter, m_sceneAABBExtents, Color(1.0f, 1.0f, 1.0f)); // Draw scene AABB
 
     // Find the view volume center
+    std::vector<glm::vec3> viewCorners = curCamera.GetFrustumCorners3D();
+    debugRenderer.DrawArbitraryBox(viewCorners, Color(1.0f, 0.0f, 0.0f)); // Draw view frustum
     glm::vec3 center(0.0f);
-    std::vector<glm::vec3> corndersV3; // debug
     for (const auto& v : viewCorners)
     {
-        center += glm::vec3(v);
-
-        corndersV3.push_back(glm::vec3(v)); // debug
+        center += v;
     }
     center /= viewCorners.size();
-    debugRenderer.DrawArbitraryBox(corndersV3, Color(1.0f, 0.0f, 0.0f)); // Draw view frustum
 
-    const auto lightView = glm::lookAt(center, center + m_light->GetDirection(), glm::vec3(0.0f, 1.0f, 0.0f));
+    auto lightView = glm::lookAt(center, center + m_light->GetDirection(), glm::vec3(0.0f, 1.0f, 0.0f));
     lightCamera.SetViewMatrix(lightView);
-    debugRenderer.DrawMatrix(lightView, center, 20.0f); // Draw center of view frustum
+    debugRenderer.DrawMatrix(glm::inverse(lightView), center, 20.0f); // Draw light view matrix in center of view frustum
+    debugRenderer.DrawMatrix(glm::inverse(lightView), m_light->GetPosition(), 20.0f); // Draw light view matrix in light pos
 
     // Compute min and max xy for the light projection matrix
     glm::vec3 min(std::numeric_limits<float>::max());
@@ -141,7 +138,7 @@ void ShadowMapRenderPass::InitLightCamera(Camera& lightCamera, const Camera& cur
     for (const auto& v : viewCorners)
     {
         // This transformation should take the points into light space, where we want to find the xy bounds
-        const auto trf = lightView * v;
+        const auto trf = lightView * glm::vec4(v, 1.0f);
         min.x = std::min(min.x, trf.x);
         min.y = std::min(min.y, trf.y);
         min.z = std::min(min.z, trf.z); // can be ignored
@@ -151,25 +148,27 @@ void ShadowMapRenderPass::InitLightCamera(Camera& lightCamera, const Camera& cur
     }
 
     // DEBUG xy bounds of the light cam
-    float lightCenter = (lightView * glm::vec4(center.x, center.y, center.z, 1.0f)).z;
-    lightCenter /= (lightView * glm::vec4(center.x, center.y, center.z, 1.0f)).w;
-    std::vector<glm::vec4> lightBoundsLightSpace;
-    lightBoundsLightSpace.push_back(glm::vec4(min.x, min.y, lightCenter, 1.0f));
-    lightBoundsLightSpace.push_back(glm::vec4(max.x, min.y, lightCenter, 1.0f));
-    lightBoundsLightSpace.push_back(glm::vec4(min.x, max.y, lightCenter, 1.0f));
-    lightBoundsLightSpace.push_back(glm::vec4(max.x, max.y, lightCenter, 1.0f));
-
-    std::vector<glm::vec3> lightBoundsWorldSpace;
-    auto invLightView = glm::inverse(lightView);
-    for (auto v : lightBoundsLightSpace)
     {
-        glm::vec3 corn = glm::vec3(invLightView * v);
-        lightBoundsWorldSpace.push_back(corn);
+        float lightCenter = (lightView * glm::vec4(center.x, center.y, center.z, 1.0f)).z;
+        lightCenter /= (lightView * glm::vec4(center.x, center.y, center.z, 1.0f)).w;
+        std::vector<glm::vec4> lightBoundsLightSpace;
+        lightBoundsLightSpace.push_back(glm::vec4(min.x, min.y, lightCenter, 1.0f));
+        lightBoundsLightSpace.push_back(glm::vec4(min.x, max.y, lightCenter, 1.0f));
+        lightBoundsLightSpace.push_back(glm::vec4(max.x, max.y, lightCenter, 1.0f));
+        lightBoundsLightSpace.push_back(glm::vec4(max.x, min.y, lightCenter, 1.0f));
+
+        std::vector<glm::vec3> lightBoundsWorldSpace;
+        auto invLightView = glm::inverse(lightView);
+        for (auto v : lightBoundsLightSpace)
+        {
+            glm::vec3 corn = glm::vec3(invLightView * v);
+            lightBoundsWorldSpace.push_back(corn);
+        }
+
+        debugRenderer.DrawSquare(lightBoundsWorldSpace, Color(0.8f, 0.0f, 0.8f)); // Draw 2D square representing the xy bounds of the light camera
     }
 
-    debugRenderer.DrawSquare(lightBoundsWorldSpace, Color(0.8f, 0.0f, 0.8f));
-    // DEBUG xy bounds of light bounds END
-
+    // TODO: Make this work
     // Move the Light in Texel-Sized Increments
     float worldUnitsPerTexel = (max.x - min.x) / m_shadowBufferSize;
     min /= worldUnitsPerTexel;
@@ -180,20 +179,15 @@ void ShadowMapRenderPass::InitLightCamera(Camera& lightCamera, const Camera& cur
     max *= worldUnitsPerTexel;
     // TODO: Does the worldUnitsPerTexel require world space? See comment at bottom.
 
-    // Tight near-far method:
     auto sceneLightSpace = GetSceneAABBLightSpace(lightView);
+
+    // Tight near-far method:
     // min max in light space. Passing in z as reference so ComputeNearFar can recalculate those to a tight fit.
-    ComputeNearAndFar(min.z, max.z, glm::vec2(min.x, min.y), glm::vec2(max.x, max.y), sceneLightSpace);
+    //ComputeNearAndFar(min.z, max.z, glm::vec2(min.x, min.y), glm::vec2(max.x, max.y), sceneLightSpace);
 
-    // Naive method:
-    // min.z = -m_sceneAABBExtents.z;
-    // max.z = m_sceneAABBExtents.z;
-
-    // World space?
-    glm::vec4 minWorldSpace = invLightView * glm::vec4(min, 1.0f);
-    glm::vec4 maxWorldSpace = invLightView * glm::vec4(max, 1.0f);
-    minWorldSpace /= minWorldSpace.w;
-    maxWorldSpace /= maxWorldSpace.w;
+    // Naive near-far method:
+    // This one just takes the min and max of the scene AABB in light space.
+    ComputeNearAndFarNoClip(min.z, max.z, sceneLightSpace);
 
     // Projection matrix
     switch (m_light->GetType())
@@ -201,14 +195,9 @@ void ShadowMapRenderPass::InitLightCamera(Camera& lightCamera, const Camera& cur
     case Light::Type::Directional:
         lightCamera.SetOrthographicProjectionMatrix(min, max);
 
-        // DEBUG LIGHT CAM START
-        viewCorners = lightCamera.GetFrustumCornersWorldSpace();
-        corndersV3.clear();
-        for (const auto& v : viewCorners)
-        {
-            corndersV3.push_back(glm::vec3(v));
-        }
-        debugRenderer.DrawArbitraryBox(corndersV3, Color(0.0f, 1.0f, 0.0f)); // Draw light frustum
+        // DEBUG LIGHT CAM
+        viewCorners = lightCamera.GetFrustumCorners3D();
+        debugRenderer.DrawArbitraryBox(viewCorners, Color(0.0f, 1.0f, 0.0f)); // Draw light frustum
         break;
     default:
         assert(false);
@@ -423,33 +412,41 @@ void ShadowMapRenderPass::ComputeNearAndFar(float& near, float& far, glm::vec2 l
     }
 }
 
+void ShadowMapRenderPass::ComputeNearAndFarNoClip(float& near, float& far, std::vector<glm::vec3> sceneAABB)
+{
+    for (int index = 0; index < 8; ++index)
+    {
+        float zVal = sceneAABB[index].z;
+        if (near > zVal)
+        {
+            near = zVal;
+        }
+        if (far < zVal)
+        {
+            far = zVal;
+        }
+    }
+}
+
 std::vector<glm::vec3> ShadowMapRenderPass::GetSceneAABBLightSpace(const glm::mat4& lightView)
 {
     // 8 corners of the AABB box
     std::vector<glm::vec3> aabbCorners;
 
-    // Top
-    aabbCorners.push_back({m_sceneAABBMax.x, m_sceneAABBMax.y, m_sceneAABBMax.z});
-    aabbCorners.push_back({m_sceneAABBMin.x, m_sceneAABBMax.y, m_sceneAABBMax.z});
-    aabbCorners.push_back({m_sceneAABBMin.x, m_sceneAABBMax.y, m_sceneAABBMin.z});
-    aabbCorners.push_back({m_sceneAABBMax.x, m_sceneAABBMin.y, m_sceneAABBMax.z});
-
-    // Bottom
-    aabbCorners.push_back({ m_sceneAABBMin.x, m_sceneAABBMin.y, m_sceneAABBMin.z });
-    aabbCorners.push_back({ m_sceneAABBMax.x, m_sceneAABBMin.y, m_sceneAABBMin.z });
-    aabbCorners.push_back({ m_sceneAABBMax.x, m_sceneAABBMin.y, m_sceneAABBMax.z });
-    aabbCorners.push_back({ m_sceneAABBMin.x, m_sceneAABBMin.y, m_sceneAABBMax.z });
-
-    // TODO: optimize this
-    // Convert to light space
-    std::vector<glm::vec3> aabbCornersLightSpace;
-
-    for (const auto& pt : aabbCorners) {
-        glm::vec4 newPt = lightView * glm::vec4(pt, 1.0f);
-        aabbCornersLightSpace.push_back({ newPt / newPt.w });
+    glm::vec3 sceneAABB[2] = { m_sceneAABBMin, m_sceneAABBMax };
+    for (unsigned int x = 0; x < 2; ++x)
+    {
+        for (unsigned int y = 0; y < 2; ++y)
+        {
+            for (unsigned int z = 0; z < 2; ++z)
+            {
+                const glm::vec4 pt = lightView * glm::vec4(sceneAABB[x].x, sceneAABB[y].y, sceneAABB[z].z, 1.0f);
+                aabbCorners.push_back(pt / pt.w);
+            }
+        }
     }
 
-    return aabbCornersLightSpace;
+    return aabbCorners;
 }
 
 /*
