@@ -100,4 +100,6 @@ private:
     int m_blurIterations;
     glm::vec2 m_bloomRange;
     float m_bloomIntensity;
+
+    int m_shadowPassIndex;
 };

@@ -114,6 +114,11 @@ int Renderer::AddRenderPass(std::unique_ptr<RenderPass> renderPass)
     return passIndex;
 }
 
+RenderPass* Renderer::GetRenderPass(int index)
+{
+    return m_passes[index].get();
+}
+
 void Renderer::RegisterShaderProgram(std::shared_ptr<const ShaderProgram> shaderProgramPtr,
     const UpdateTransformsFunction& updateTransformFunction,
     const UpdateLightsFunction& updateLightsFunction)

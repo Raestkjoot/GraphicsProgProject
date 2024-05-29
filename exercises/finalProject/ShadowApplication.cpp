@@ -74,6 +74,16 @@ void ShadowApplication::Update()
 	// Add the scene nodes to the renderer
 	RendererSceneVisitor rendererSceneVisitor(m_renderer);
 	m_scene.AcceptVisitor(rendererSceneVisitor);
+
+
+	if (GetMainWindow().IsKeyPressed(GLFW_KEY_T))
+	{
+		static_cast<ShadowMapRenderPass*>(m_renderer.GetRenderPass(m_shadowPassIndex))->shouldFreeze = true;
+	}
+	if (GetMainWindow().IsKeyPressed(GLFW_KEY_U))
+	{
+		static_cast<ShadowMapRenderPass*>(m_renderer.GetRenderPass(m_shadowPassIndex))->shouldFreeze = false;
+	}
 }
 
 void ShadowApplication::Render()
@@ -96,7 +106,7 @@ void ShadowApplication::InitializeCamera()
 {
 	std::shared_ptr<Camera> camera = std::make_shared<Camera>();
 	camera->SetViewMatrix(glm::vec3(-2, 1, -2), glm::vec3(0, 0.5f, 0), glm::vec3(0, 1, 0));
-	camera->SetPerspectiveProjectionMatrix(2.0f, 1.0f, 0.1f, 100.0f);
+	camera->SetPerspectiveProjectionMatrix(2.0f, 1.0f, 0.1f, 150.0f);
 	std::shared_ptr<SceneCamera> sceneCamera = std::make_shared<SceneCamera>("camera", camera);
 	m_scene.AddSceneNode(sceneCamera);
 	m_cameraController.SetCamera(sceneCamera);
@@ -382,14 +392,14 @@ void ShadowApplication::InitializeRenderer()
 	{
 		if (!m_mainLight->GetShadowMap())
 		{
-			m_mainLight->CreateShadowMap(glm::vec2(1080, 1080));
+			m_mainLight->CreateShadowMap(glm::vec2(2000, 2000));
 			m_mainLight->SetShadowBias(0.001f);
 		}
 		std::unique_ptr<ShadowMapRenderPass> shadowMapRenderPass(std::make_unique<ShadowMapRenderPass>(m_mainLight, m_shadowMapMaterial));
 		glm::vec3 min, max;
 		m_scene.GetAABBBounds(min, max);
 		shadowMapRenderPass->SetSceneAABBBounds(min, max);
-		m_renderer.AddRenderPass(std::move(shadowMapRenderPass));
+		m_shadowPassIndex = m_renderer.AddRenderPass(std::move(shadowMapRenderPass));
 	}
 
 	// Set up deferred passes

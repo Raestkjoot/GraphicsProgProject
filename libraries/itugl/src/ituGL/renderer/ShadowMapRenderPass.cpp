@@ -79,7 +79,13 @@ void ShadowMapRenderPass::Render()
 
     // Set up light as the camera
     Camera lightCamera;
-    InitLightCamera(lightCamera, currentCamera);
+
+    if (!shouldFreeze)
+        m_mainCameraCopy = currentCamera;
+
+    glEnable(GL_DEPTH_CLAMP);
+    InitLightCamera(lightCamera, m_mainCameraCopy);
+
     renderer.SetCurrentCamera(lightCamera);
 
     // for all drawcalls
@@ -108,6 +114,7 @@ void ShadowMapRenderPass::Render()
 
     // Restore default framebuffer to avoid drawing to the shadow map
     renderer.SetCurrentFramebuffer(renderer.GetDefaultFramebuffer());
+    glDisable(GL_DEPTH_CLAMP);
 }
 
 void ShadowMapRenderPass::InitLightCamera(Camera& lightCamera, const Camera& curCamera)
@@ -118,7 +125,7 @@ void ShadowMapRenderPass::InitLightCamera(Camera& lightCamera, const Camera& cur
     debugRenderer.DrawAABB(m_sceneAABBCenter, m_sceneAABBExtents, Color(1.0f, 1.0f, 1.0f)); // Draw scene AABB
 
     // Find the view volume center
-    std::vector<glm::vec3> viewCorners = curCamera.GetFrustumCorners3D();
+    std::vector<glm::vec3> viewCorners = curCamera.GetFrustumCornersWorldSpace3D();
     debugRenderer.DrawArbitraryBox(viewCorners, Color(1.0f, 0.0f, 0.0f)); // Draw view frustum
     glm::vec3 center(0.0f);
     for (const auto& v : viewCorners)
@@ -127,10 +134,10 @@ void ShadowMapRenderPass::InitLightCamera(Camera& lightCamera, const Camera& cur
     }
     center /= viewCorners.size();
 
-    auto lightView = glm::lookAt(center, center + m_light->GetDirection(), glm::vec3(0.0f, 1.0f, 0.0f));
-    lightCamera.SetViewMatrix(lightView);
+    glm::vec3 lightDirection = center + m_light->GetDirection();
+    auto lightView = glm::lookAt(center, lightDirection, glm::vec3(0.0f, 1.0f, 0.0f));
     debugRenderer.DrawMatrix(glm::inverse(lightView), center, 20.0f); // Draw light view matrix in center of view frustum
-    debugRenderer.DrawMatrix(glm::inverse(lightView), m_light->GetPosition(), 20.0f); // Draw light view matrix in light pos
+    //debugRenderer.DrawMatrix(glm::inverse(lightView), m_light->GetPosition(), 20.0f); // Draw light view matrix in light pos
 
     // Compute min and max xy for the light projection matrix
     glm::vec3 min(std::numeric_limits<float>::max());
@@ -169,6 +176,7 @@ void ShadowMapRenderPass::InitLightCamera(Camera& lightCamera, const Camera& cur
     }
 
     // TODO: Make this work
+    // TODO: Don't do it to z
     // Move the Light in Texel-Sized Increments
     float worldUnitsPerTexel = (max.x - min.x) / m_shadowBufferSize;
     min /= worldUnitsPerTexel;
@@ -181,22 +189,35 @@ void ShadowMapRenderPass::InitLightCamera(Camera& lightCamera, const Camera& cur
 
     auto sceneLightSpace = GetSceneAABBLightSpace(lightView);
 
+    float near, far;
+    near = min.z;
+    far = max.z;
     // Tight near-far method:
     // min max in light space. Passing in z as reference so ComputeNearFar can recalculate those to a tight fit.
-    //ComputeNearAndFar(min.z, max.z, glm::vec2(min.x, min.y), glm::vec2(max.x, max.y), sceneLightSpace);
-
+    //ComputeNearAndFar(near, far, glm::vec2(min.x, min.y), glm::vec2(max.x, max.y), sceneLightSpace);
     // Naive near-far method:
     // This one just takes the min and max of the scene AABB in light space.
-    ComputeNearAndFarNoClip(min.z, max.z, sceneLightSpace);
+    //ComputeNearAndFarNoClip(near, far, sceneLightSpace);
+
+    float lightNearFarExtent = far - near;
 
     // Projection matrix
     switch (m_light->GetType())
     {
     case Light::Type::Directional:
+        glm::vec3 lightCameraPos = center - m_light->GetDirection() * far;
+        lightView = glm::lookAt(lightCameraPos, center, glm::vec3(0.0f, 1.0f, 0.0f));
+
+        debugRenderer.DrawMatrix(glm::inverse(lightView), lightCameraPos, 20.0f); // Draw new light cam pos and dir
+
+        min.z = 0.0f;
+        max.z = lightNearFarExtent;
+
         lightCamera.SetOrthographicProjectionMatrix(min, max);
+        lightCamera.SetViewMatrix(lightView);
 
         // DEBUG LIGHT CAM
-        viewCorners = lightCamera.GetFrustumCorners3D();
+        viewCorners = lightCamera.GetFrustumCornersWorldSpace3D();
         debugRenderer.DrawArbitraryBox(viewCorners, Color(0.0f, 1.0f, 0.0f)); // Draw light frustum
         break;
     default:
@@ -414,6 +435,9 @@ void ShadowMapRenderPass::ComputeNearAndFar(float& near, float& far, glm::vec2 l
 
 void ShadowMapRenderPass::ComputeNearAndFarNoClip(float& near, float& far, std::vector<glm::vec3> sceneAABB)
 {
+    near = std::numeric_limits<float>::max();
+    far = std::numeric_limits<float>::lowest();
+
     for (int index = 0; index < 8; ++index)
     {
         float zVal = sceneAABB[index].z;

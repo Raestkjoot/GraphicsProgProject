@@ -40,7 +40,7 @@ public:
     void ExtractVectors(glm::vec3& right, glm::vec3& up, glm::vec3& forward) const;
 
     std::vector<glm::vec4> GetFrustumCornersWorldSpace() const;
-    std::vector<glm::vec3> GetFrustumCorners3D() const;
+    std::vector<glm::vec3> GetFrustumCornersWorldSpace3D() const;
     glm::mat4 GetInvViewProjMatrix() const;
 
 

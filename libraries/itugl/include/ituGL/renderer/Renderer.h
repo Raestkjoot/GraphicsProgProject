@@ -49,6 +49,7 @@ public:
     DeviceGL& GetDevice() { return m_device; }
 
     int AddRenderPass(std::unique_ptr<RenderPass> renderPass);
+    RenderPass* GetRenderPass(int index);
 
     bool HasCamera() const;
     const Camera& GetCurrentCamera() const;

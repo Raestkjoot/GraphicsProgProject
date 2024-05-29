@@ -1,12 +1,12 @@
 #pragma once
 
 #include <ituGL/renderer/RenderPass.h>
+#include <ituGL/camera/Camera.h>
 
 #include <glm/glm.hpp>
 #include <vector>
 
 class Light;
-class Camera;
 class Material;
 
 struct Triangle
@@ -33,6 +33,8 @@ public:
 
     void Render() override;
 
+    bool shouldFreeze = false;
+
 private:
     void InitFramebuffer();
     void InitLightCamera(Camera& lightCamera, const Camera& curCamera);
@@ -56,4 +58,7 @@ private:
     glm::vec3 m_sceneAABBMax;
     glm::vec3 m_sceneAABBExtents;
     glm::vec3 m_sceneAABBCenter;
+
+    Camera m_mainCameraCopy;
+
 };
