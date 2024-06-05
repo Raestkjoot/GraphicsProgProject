@@ -28,7 +28,7 @@ class ShadowMapRenderPass : public RenderPass
 public:
     ShadowMapRenderPass(std::shared_ptr<Light> light, std::shared_ptr<const Material> material, int drawcallCollectionIndex = 0);
 
-    void SetVolume(glm::vec3 volumeCenter, glm::vec3 volumeSize);
+    void SetVolume(const glm::vec3& volumeCenter, const glm::vec3& volumeSize);
     void SetSceneAABBBounds(const glm::vec3& min, const glm::vec3& max);
 
     void Render() override;
@@ -38,8 +38,9 @@ public:
 private:
     void InitFramebuffer();
     void InitLightCamera(Camera& lightCamera, const Camera& curCamera);
-    void ComputeNearAndFar(float& near, float& far, glm::vec2 lightFrustMin, glm::vec2 lightFrustMax, std::vector<glm::vec3> sceneAABB);
-    void ComputeNearAndFarNoClip(float& near, float& far, std::vector<glm::vec3> sceneAABB);
+    void ComputeNearAndFar(float& near, float& far, const glm::vec2& lightFrustumMin, 
+        const glm::vec2& lightFrustumMax, const std::vector<glm::vec3>& sceneAABBLightSpace);
+    void ComputeNearAndFarNoClip(float& near, float& far, const std::vector<glm::vec3>& sceneAABB);
     std::vector<glm::vec3> GetSceneAABBLightSpace(const glm::mat4& lightView);
 
 

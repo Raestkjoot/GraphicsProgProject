@@ -23,7 +23,7 @@ ShadowMapRenderPass::ShadowMapRenderPass(std::shared_ptr<Light> light, std::shar
     InitFramebuffer();
 }
 
-void ShadowMapRenderPass::SetVolume(glm::vec3 volumeCenter, glm::vec3 volumeSize)
+void ShadowMapRenderPass::SetVolume(const glm::vec3& volumeCenter, const glm::vec3& volumeSize)
 {
     m_volumeCenter = volumeCenter;
     m_volumeSize = volumeSize;
@@ -83,7 +83,7 @@ void ShadowMapRenderPass::Render()
     if (!shouldFreeze)
         m_mainCameraCopy = currentCamera;
 
-    glEnable(GL_DEPTH_CLAMP);
+    glEnable(GL_DEPTH_CLAMP); // pancaking
     InitLightCamera(lightCamera, m_mainCameraCopy);
 
     renderer.SetCurrentCamera(lightCamera);
@@ -114,6 +114,8 @@ void ShadowMapRenderPass::Render()
 
     // Restore default framebuffer to avoid drawing to the shadow map
     renderer.SetCurrentFramebuffer(renderer.GetDefaultFramebuffer());
+
+    // Restore depth culling
     glDisable(GL_DEPTH_CLAMP);
 }
 
@@ -137,7 +139,6 @@ void ShadowMapRenderPass::InitLightCamera(Camera& lightCamera, const Camera& cur
     glm::vec3 lightDirection = center + m_light->GetDirection();
     auto lightView = glm::lookAt(center, lightDirection, glm::vec3(0.0f, 1.0f, 0.0f));
     debugRenderer.DrawMatrix(glm::inverse(lightView), center, 20.0f); // Draw light view matrix in center of view frustum
-    //debugRenderer.DrawMatrix(glm::inverse(lightView), m_light->GetPosition(), 20.0f); // Draw light view matrix in light pos
 
     // Compute min and max xy for the light projection matrix
     glm::vec3 min(std::numeric_limits<float>::max());
@@ -175,8 +176,8 @@ void ShadowMapRenderPass::InitLightCamera(Camera& lightCamera, const Camera& cur
         debugRenderer.DrawSquare(lightBoundsWorldSpace, Color(0.8f, 0.0f, 0.8f)); // Draw 2D square representing the xy bounds of the light camera
     }
 
-    // TODO: Make this work
-    // TODO: Don't do it to z
+    // TODO: Make this work (maybe use world space origin position in light space?)
+    // TODO: Maybe don't do it to z
     // Move the Light in Texel-Sized Increments
     float worldUnitsPerTexel = (max.x - min.x) / m_shadowBufferSize;
     min /= worldUnitsPerTexel;
@@ -192,6 +193,8 @@ void ShadowMapRenderPass::InitLightCamera(Camera& lightCamera, const Camera& cur
     float near, far;
     near = min.z;
     far = max.z;
+
+    /*__[ with pancaking, this stuff is no longer relevant]__*/
     // Tight near-far method:
     // min max in light space. Passing in z as reference so ComputeNearFar can recalculate those to a tight fit.
     //ComputeNearAndFar(near, far, glm::vec2(min.x, min.y), glm::vec2(max.x, max.y), sceneLightSpace);
@@ -226,7 +229,7 @@ void ShadowMapRenderPass::InitLightCamera(Camera& lightCamera, const Camera& cur
     }
 }
 
-void ShadowMapRenderPass::ComputeNearAndFar(float& near, float& far, glm::vec2 lightFrustumMin, glm::vec2 lightFrustumMax, std::vector<glm::vec3> sceneAABBLightSpace)
+void ShadowMapRenderPass::ComputeNearAndFar(float& near, float& far, const glm::vec2& lightFrustumMin, const glm::vec2& lightFrustumMax, const std::vector<glm::vec3>& sceneAABBLightSpace)
 {
     near = std::numeric_limits<float>::max();
     far = std::numeric_limits<float>::lowest();
@@ -433,7 +436,7 @@ void ShadowMapRenderPass::ComputeNearAndFar(float& near, float& far, glm::vec2 l
     }
 }
 
-void ShadowMapRenderPass::ComputeNearAndFarNoClip(float& near, float& far, std::vector<glm::vec3> sceneAABB)
+void ShadowMapRenderPass::ComputeNearAndFarNoClip(float& near, float& far, const std::vector<glm::vec3>& sceneAABB)
 {
     near = std::numeric_limits<float>::max();
     far = std::numeric_limits<float>::lowest();
