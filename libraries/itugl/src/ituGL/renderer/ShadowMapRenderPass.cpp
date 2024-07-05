@@ -149,10 +149,10 @@ void ShadowMapRenderPass::InitLightCamera(Camera& lightCamera, const Camera& cur
         const auto trf = lightView * glm::vec4(v, 1.0f);
         min.x = std::min(min.x, trf.x);
         min.y = std::min(min.y, trf.y);
-        min.z = std::min(min.z, trf.z); // can be ignored
+        min.z = std::min(min.z, trf.z);
         max.x = std::max(max.x, trf.x);
         max.y = std::max(max.y, trf.y);
-        max.z = std::max(max.z, trf.z); // can be ignored
+        max.z = std::max(max.z, trf.z);
     }
 
     // DEBUG xy bounds of the light cam
@@ -176,25 +176,87 @@ void ShadowMapRenderPass::InitLightCamera(Camera& lightCamera, const Camera& cur
         debugRenderer.DrawSquare(lightBoundsWorldSpace, Color(0.8f, 0.0f, 0.8f)); // Draw 2D square representing the xy bounds of the light camera
     }
 
-    // TODO: Make this work (maybe use world space origin position in light space?)
-    // TODO: Maybe don't do it to z
-    // Move the Light in Texel-Sized Increments
-    float worldUnitsPerTexel = (max.x - min.x) / m_shadowBufferSize;
-    min /= worldUnitsPerTexel;
-    min = glm::floor(min);
-    min *= worldUnitsPerTexel;
-    max /= worldUnitsPerTexel;
-    max = glm::floor(max);
-    max *= worldUnitsPerTexel;
-    // TODO: Does the worldUnitsPerTexel require world space? See comment at bottom.
-
-    auto sceneLightSpace = GetSceneAABBLightSpace(lightView);
+    // Stabilization v0
+    //// TODO: Make this work (maybe use world space origin position in light space?)
+    //// TODO: Maybe don't do it to z
+    //// Move the Light in Texel-Sized Increments
+    //float worldUnitsPerTexel = (max.x - min.x) / m_shadowBufferSize;
+    //min /= worldUnitsPerTexel;
+    //min = glm::floor(min);
+    //min *= worldUnitsPerTexel;
+    //max /= worldUnitsPerTexel;
+    //max = glm::floor(max);
+    //max *= worldUnitsPerTexel;
+    //// TODO: Does the worldUnitsPerTexel require world space? See comment at bottom.
 
     float near, far;
     near = min.z;
     far = max.z;
+    float lightNearFarExtent = far - near;
+
+    // stabilization v1
+    //glm::mat4x4 shadowProjMatrix = glm::ortho(min.x, max.x, min.y, max.y, min.z, max.z);
+    //glm::mat4x4 shadowMatrix = shadowProjMatrix * lightView;
+    //glm::vec4 shadowOrigin = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+    //shadowOrigin = shadowMatrix * shadowOrigin;
+    //shadowOrigin *= m_shadowBufferSize / 2.0f;
+
+    //glm::vec4 roundOrigin = glm::round(shadowOrigin);
+    //glm::vec4 roundOffset = roundOrigin - shadowOrigin;
+    //roundOffset *= 2.0f / m_shadowBufferSize;
+    //roundOffset.z = 0.0f;
+    //roundOffset.w = 0.0f;
+
+    //center.x += roundOffset.x;
+    //center.y += roundOffset.y;
+
+
+    // Stabilization v2
+    float lightBoundRadius = 304.0f;
+    min.x = center.x - lightBoundRadius;
+    max.x = center.x + lightBoundRadius;
+    min.y = center.y - lightBoundRadius;
+    max.y = center.y + lightBoundRadius;
+
+    min.z = 0.0f;
+    max.z = lightNearFarExtent;
+
+    glm::vec3 lightCameraPos = center - m_light->GetDirection() * far;
+    lightView = glm::lookAt(lightCameraPos, center, glm::vec3(0.0f, 1.0f, 0.0f));
+    lightCamera.SetOrthographicProjectionMatrix(min, max);
+    lightCamera.SetViewMatrix(lightView);
+
+    glm::vec4 shadowOrigin = glm::vec4(0.f, 0.f, 0.f, 1.0f);
+    shadowOrigin = lightCamera.GetViewProjectionMatrix() * shadowOrigin;
+    std::cout << glm::to_string(shadowOrigin) << std::endl;
+    shadowOrigin *= m_shadowBufferSize / 2.0f;
+
+    glm::vec4 roundOrigin = glm::round(shadowOrigin);
+    glm::vec4 roundOffset = roundOrigin - shadowOrigin;
+    roundOffset *= 2.0f / m_shadowBufferSize;
+    roundOffset.z = 0.0f;
+    roundOffset.w = 0.0f;
+
+    //center.x += roundOffset.x;
+    //center.y += roundOffset.y;
+
+    //min.x = center.x - lightBoundRadius;
+    //max.x = center.x + lightBoundRadius;
+    //min.y = center.y - lightBoundRadius;
+    //max.y = center.y + lightBoundRadius;
+
+    //lightCameraPos = center - m_light->GetDirection() * far;
+    //lightView = glm::lookAt(lightCameraPos, center, glm::vec3(0.0f, 1.0f, 0.0f));
+    //lightCamera.SetOrthographicProjectionMatrix(min, max);
+    //lightCamera.SetViewMatrix(lightView);
+
+    // stabilization v2.1
+    glm::mat4x4 shadowProj = lightCamera.GetProjectionMatrix();
+    shadowProj[3] += roundOffset;
+    lightCamera.SetProjectionMatrix(shadowProj);
 
     /*__[ with pancaking, this stuff is no longer relevant]__*/
+    // auto sceneLightSpace = GetSceneAABBLightSpace(lightView);
     // Tight near-far method:
     // min max in light space. Passing in z as reference so ComputeNearFar can recalculate those to a tight fit.
     //ComputeNearAndFar(near, far, glm::vec2(min.x, min.y), glm::vec2(max.x, max.y), sceneLightSpace);
@@ -202,26 +264,27 @@ void ShadowMapRenderPass::InitLightCamera(Camera& lightCamera, const Camera& cur
     // This one just takes the min and max of the scene AABB in light space.
     //ComputeNearAndFarNoClip(near, far, sceneLightSpace);
 
-    float lightNearFarExtent = far - near;
 
     // Projection matrix
     switch (m_light->GetType())
     {
     case Light::Type::Directional:
-        glm::vec3 lightCameraPos = center - m_light->GetDirection() * far;
-        lightView = glm::lookAt(lightCameraPos, center, glm::vec3(0.0f, 1.0f, 0.0f));
+        //glm::vec3 lightCameraPos = center - m_light->GetDirection() * far;
+        ////lightCameraPos.x += roundOffset.x;
+        ////lightCameraPos.y += roundOffset.y;
+        //lightView = glm::lookAt(lightCameraPos, center, glm::vec3(0.0f, 1.0f, 0.0f));
 
-        debugRenderer.DrawMatrix(glm::inverse(lightView), lightCameraPos, 20.0f); // Draw new light cam pos and dir
+        //debugRenderer.DrawMatrix(glm::inverse(lightView), lightCameraPos, 20.0f); // Draw new light cam pos and dir
 
-        min.z = 0.0f;
-        max.z = lightNearFarExtent;
+        //min.z = 0.0f;
+        //max.z = lightNearFarExtent;
 
-        lightCamera.SetOrthographicProjectionMatrix(min, max);
-        lightCamera.SetViewMatrix(lightView);
+        //lightCamera.SetOrthographicProjectionMatrix(min, max);
+        //lightCamera.SetViewMatrix(lightView);
 
-        // DEBUG LIGHT CAM
-        viewCorners = lightCamera.GetFrustumCornersWorldSpace3D();
-        debugRenderer.DrawArbitraryBox(viewCorners, Color(0.0f, 1.0f, 0.0f)); // Draw light frustum
+        //// DEBUG LIGHT CAM
+        //viewCorners = lightCamera.GetFrustumCornersWorldSpace3D();
+        //debugRenderer.DrawArbitraryBox(viewCorners, Color(0.0f, 1.0f, 0.0f)); // Draw light frustum
         break;
     default:
         assert(false);
