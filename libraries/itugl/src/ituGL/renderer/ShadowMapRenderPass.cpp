@@ -143,8 +143,12 @@ void ShadowMapRenderPass::InitLightCamera(Camera& lightCamera, const Camera& cur
     // Compute min and max xy for the light projection matrix
     glm::vec3 min(std::numeric_limits<float>::max());
     glm::vec3 max(std::numeric_limits<float>::lowest());
+    float sphereRadius = 0.0f;
     for (const auto& v : viewCorners)
     {
+        // calculate radius of a bounding sphere surrounding the view frustum corners
+        float dist = glm::distance(v, center);
+        sphereRadius = glm::max(sphereRadius, dist);
         // This transformation should take the points into light space, where we want to find the xy bounds
         const auto trf = lightView * glm::vec4(v, 1.0f);
         min.x = std::min(min.x, trf.x);
@@ -188,11 +192,15 @@ void ShadowMapRenderPass::InitLightCamera(Camera& lightCamera, const Camera& cur
 
     // STABILIZATION: Use bounding sphere surrounding the view frustum corners
     // to counteract flickering from camera rotation.
-    float lightBoundRadius = 304.0f; // TODO: calculate based max corner dist from center
-    min.x = center.x - lightBoundRadius;
-    max.x = center.x + lightBoundRadius;
-    min.y = center.y - lightBoundRadius;
-    max.y = center.y + lightBoundRadius;
+    // This was the original line but it still caused some flickering:
+    // sphereRadius = std::ceil(sphereRadius * 16.0f) / 16.0f; 
+    sphereRadius = std::ceil(sphereRadius);
+    // Maybe we need a more specific bias, since ceil might fail if the radius dithering between two numbers like 300.99 and 301.01
+
+    min.x = center.x - sphereRadius;
+    max.x = center.x + sphereRadius;
+    min.y = center.y - sphereRadius;
+    max.y = center.y + sphereRadius;
 
     min.z = 0.0f;
     max.z = lightNearFarExtent;
