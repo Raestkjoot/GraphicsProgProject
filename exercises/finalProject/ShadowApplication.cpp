@@ -34,6 +34,8 @@
 #include <iostream>
 #include <glm/gtx/string_cast.hpp>
 
+#define N_OF_CASCADES 1
+
 ShadowApplication::ShadowApplication()
 	: Application(1024, 1024, "Shadow Scene Viewer demo")
 	, m_renderer(GetDevice())
@@ -392,13 +394,14 @@ void ShadowApplication::InitializeRenderer()
 	{
 		if (!m_mainLight->GetShadowMap())
 		{
-			m_mainLight->CreateShadowMap(glm::vec2(2000, 2000));
+			m_mainLight->CreateShadowMap(glm::vec2(2000, 2000), N_OF_CASCADES);
 			m_mainLight->SetShadowBias(0.001f);
 		}
 		std::unique_ptr<ShadowMapRenderPass> shadowMapRenderPass(std::make_unique<ShadowMapRenderPass>(m_mainLight, m_shadowMapMaterial));
 		glm::vec3 min, max;
 		m_scene.GetAABBBounds(min, max);
 		shadowMapRenderPass->SetSceneAABBBounds(min, max);
+		shadowMapRenderPass->SetCascadeLevels(m_cameraController.GetCamera()->GetCamera()->GetFarPlane());
 		m_shadowPassIndex = m_renderer.AddRenderPass(std::move(shadowMapRenderPass));
 	}
 

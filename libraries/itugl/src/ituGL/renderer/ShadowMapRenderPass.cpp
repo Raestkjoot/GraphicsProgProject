@@ -38,6 +38,11 @@ void ShadowMapRenderPass::SetSceneAABBBounds(const glm::vec3& min, const glm::ve
     m_sceneAABBCenter = min + m_sceneAABBExtents;
 }
 
+void ShadowMapRenderPass::SetCascadeLevels(float viewCameraFarPlane)
+{
+    m_cascadeLevels = std::vector<float>{ viewCameraFarPlane / 25.0f, viewCameraFarPlane / 10.0f, viewCameraFarPlane / 2.0f };
+}
+
 void ShadowMapRenderPass::InitFramebuffer()
 {
     std::shared_ptr<FramebufferObject> targetFramebuffer = std::make_shared<FramebufferObject>();
@@ -77,34 +82,37 @@ void ShadowMapRenderPass::Render()
     // Backup current camera and use to clip light shadow projection.
     const Camera& currentCamera = renderer.GetCurrentCamera();
 
-    // Set up light as the camera
-    Camera lightCamera;
 
     if (!shouldFreeze)
         m_mainCameraCopy = currentCamera;
 
     glEnable(GL_DEPTH_CLAMP); // pancaking
-    InitLightCamera(lightCamera, m_mainCameraCopy);
 
-    renderer.SetCurrentCamera(lightCamera);
-
-    // for all drawcalls
-    bool first = true;
-    for (const Renderer::DrawcallInfo& drawcallInfo : drawcallCollection)
+    for (size_t i = 0; i < m_cascadeLevels.size() + 1; ++i)
     {
-        // Bind the vao
-        drawcallInfo.vao.Bind();
+        // Set up light as the camera
+        Camera lightCamera;
+        InitLightCamera(lightCamera, m_mainCameraCopy);
+        renderer.SetCurrentCamera(lightCamera);
 
-        // Set up object matrix
-        renderer.UpdateTransforms(shaderProgram, drawcallInfo.worldMatrixIndex, first);
+        // for all drawcalls
+        bool first = true;
+        for (const Renderer::DrawcallInfo& drawcallInfo : drawcallCollection)
+        {
+            // Bind the vao
+            drawcallInfo.vao.Bind();
 
-        // Render drawcall
-        drawcallInfo.drawcall.Draw();
+            // Set up object matrix
+            renderer.UpdateTransforms(shaderProgram, drawcallInfo.worldMatrixIndex, first);
 
-        first = false;
+            // Render drawcall
+            drawcallInfo.drawcall.Draw();
+
+            first = false;
+        }
+
+        m_light->SetShadowMatrix(lightCamera.GetViewProjectionMatrix(), i);
     }
-
-    m_light->SetShadowMatrix(lightCamera.GetViewProjectionMatrix());
 
     // Restore viewport
     renderer.GetDevice().SetViewport(currentViewport.x, currentViewport.y, currentViewport.z, currentViewport.w);

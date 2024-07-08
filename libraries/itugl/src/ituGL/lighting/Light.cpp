@@ -1,6 +1,7 @@
 #include <ituGL/lighting/Light.h>
 
 #include <ituGL/texture/Texture2DObject.h>
+#include <ituGL/texture/Texture2DArrayObject.h>
 
 Light::Light() : m_color(1.0f), m_intensity(1.0f)
 {
@@ -63,22 +64,23 @@ void Light::SetIntensity(float intensity)
     m_intensity = intensity;
 }
 
-std::shared_ptr<const TextureObject> Light::GetShadowMap() const
+std::shared_ptr<const Texture2DArrayObject> Light::GetShadowMap() const
 {
     return m_shadowMap;
 }
 
-void Light::SetShadowMap(std::shared_ptr<const TextureObject> shadowMap)
+void Light::SetShadowMap(std::shared_ptr<const Texture2DArrayObject> shadowMap)
 {
     m_shadowMap = shadowMap;
 }
 
-bool Light::CreateShadowMap(glm::ivec2 resolution)
+bool Light::CreateShadowMap(glm::ivec2 resolution, int numOfCascades)
 {
     assert(!m_shadowMap);
-    std::shared_ptr<Texture2DObject> shadowMap = std::make_shared<Texture2DObject>();
+    std::shared_ptr<Texture2DArrayObject> shadowMap = std::make_shared<Texture2DArrayObject>();
     shadowMap->Bind();
-    shadowMap->SetImage(0, resolution.x, resolution.y, TextureObject::FormatDepth, TextureObject::InternalFormatDepth32);
+    shadowMap->SetImage(0, resolution.x, resolution.y, numOfCascades, TextureObject::FormatDepth, TextureObject::InternalFormatDepth32);
+    m_numOfCascades = numOfCascades;
     shadowMap->SetParameter(TextureObject::ParameterEnum::MinFilter, GL_LINEAR);
     shadowMap->SetParameter(TextureObject::ParameterEnum::MagFilter, GL_LINEAR);
     shadowMap->SetParameter(TextureObject::ParameterEnum::WrapS, GL_CLAMP_TO_BORDER);
@@ -90,14 +92,24 @@ bool Light::CreateShadowMap(glm::ivec2 resolution)
     return true;
 }
 
-glm::mat4 Light::GetShadowMatrix() const
+std::vector<glm::mat4> Light::GetShadowMatrices() const
 {
-    return m_shadowMatrix;
+    return m_shadowMatrices;
 }
 
-void Light::SetShadowMatrix(const glm::mat4& matrix)
+glm::mat4 Light::GetShadowMatrix(int index) const
 {
-    m_shadowMatrix = matrix;
+    return m_shadowMatrix[index];
+}
+
+void Light::SetShadowMatrices(const std::vector<glm::mat4>& matrices)
+{
+    m_shadowMatrices = matrices;
+}
+
+void Light::SetShadowMatrix(const glm::mat4& matrix, int index)
+{
+    m_shadowMatrices[index] = matrix;
 }
 
 float Light::GetShadowBias() const
@@ -111,7 +123,6 @@ void Light::SetShadowBias(float bias)
     m_shadowBias = bias;
 }
 
-
 glm::vec2 Light::GetShadowMapResolution() const
 {
     return m_shadowMapResolution;
@@ -120,4 +131,9 @@ glm::vec2 Light::GetShadowMapResolution() const
 void Light::SetShadowMapResolution(glm::vec2 resolution)
 {
     m_shadowMapResolution = resolution;
+}
+
+unsigned int Light::GetNumOfCascades() const
+{
+    return m_numOfCascades;
 }

@@ -5,6 +5,7 @@
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
 #include <memory>
+#include <vector>
 
 class TextureObject;
 
@@ -40,12 +41,14 @@ public:
     float GetIntensity() const;
     void SetIntensity(float intensity);
 
-    std::shared_ptr<const TextureObject> GetShadowMap() const;
-    void SetShadowMap(std::shared_ptr<const TextureObject> shadowMap);
-    virtual bool CreateShadowMap(glm::ivec2 resolution);
+    std::shared_ptr<const Texture2DArrayObject> GetShadowMap() const;
+    void SetShadowMap(std::shared_ptr<const Texture2DArrayObject> shadowMap);
+    virtual bool CreateShadowMap(glm::ivec2 resolution, int numOfCascades);
 
-    glm::mat4 GetShadowMatrix() const;
-    void SetShadowMatrix(const glm::mat4& matrix);
+    std::vector<glm::mat4> GetShadowMatrices() const;
+    glm::mat4 GetShadowMatrix(int index) const;
+    void SetShadowMatrices(const std::vector<glm::mat4>& matrices);
+    void SetShadowMatrix(const glm::mat4& matrix, int index);
 
     float GetShadowBias() const;
     void SetShadowBias(float bias);
@@ -53,11 +56,14 @@ public:
     glm::vec2 GetShadowMapResolution() const;
     void SetShadowMapResolution(glm::vec2 resolution);
 
+    unsigned int GetNumOfCascades() const;
+
 protected:
     glm::vec3 m_color;
     float m_intensity;
-    std::shared_ptr<const TextureObject> m_shadowMap;
-    glm::mat4 m_shadowMatrix;
+    std::shared_ptr<const Texture2DArrayObject> m_shadowMap;
+    std::vector<glm::mat4> m_shadowMatrices;
     float m_shadowBias;
     glm::ivec2 m_shadowMapResolution;
+    unsigned int m_numOfCascades;
 };

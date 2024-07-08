@@ -30,6 +30,7 @@ public:
 
     void SetVolume(const glm::vec3& volumeCenter, const glm::vec3& volumeSize);
     void SetSceneAABBBounds(const glm::vec3& min, const glm::vec3& max);
+    void SetCascadeLevels(float viewCameraFarPlane);
 
     void Render() override;
 
@@ -54,6 +55,7 @@ private:
     glm::vec3 m_volumeCenter;
     glm::vec3 m_volumeSize;
     float m_shadowBufferSize;
+    std::vector<float> m_cascadeLevels;
 
     glm::vec3 m_sceneAABBMin;
     glm::vec3 m_sceneAABBMax;

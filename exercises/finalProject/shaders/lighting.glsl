@@ -6,9 +6,11 @@ uniform vec3 LightDirection;
 uniform vec4 LightAttenuation;
 
 uniform bool LightShadowEnabled;
-uniform sampler2DShadow LightShadowMap;
+uniform sampler2DArrayShadow LightShadowMap;
 uniform mat4 LightShadowMatrix;
 uniform float LightShadowBias;
+uniform float cascadeDistances[8];
+uniform int cascadeCount;
 
 float ComputeDistanceAttenuation(vec3 position)
 {
@@ -42,6 +44,23 @@ float ComputeShadow(vec3 position)
 	float shadow = 1.0f;
 	if (LightShadowEnabled)
 	{
+		// select cascade layer
+		float depthValue = abs(position.z);
+		int layer = -1;
+		for (int i = 0; i < cascadeCount; ++i)
+		{
+			if (depthValue < cascadeDistances[i])
+			{
+				layer = i;
+				break;
+			}
+		}
+		if (layer == -1)
+		{
+			layer = cascadeCount;
+		}
+
+
 		// Transform position to light space
 		vec4 lightSpacePosition = LightShadowMatrix * vec4(position, 1.0f);
 
