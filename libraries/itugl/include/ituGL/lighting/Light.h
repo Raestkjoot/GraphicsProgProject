@@ -8,6 +8,7 @@
 #include <vector>
 
 class TextureObject;
+class Texture2DArrayObject;
 
 class Light
 {

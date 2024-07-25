@@ -179,12 +179,12 @@ Renderer::UpdateLightsFunction Renderer::GetDefaultUpdateLightsFunction(const Sh
             shaderProgram.SetUniform(lightAttenuationLocation, light.GetAttenuation());
             shaderProgram.SetUniform(lightAttenuationLocation, light.GetAttenuation());
 
-            std::shared_ptr<const TextureObject> shadowMap = light.GetShadowMap();
-            shaderProgram.SetUniform(LightShadowEnabledLocation, shadowMap ? 1 : 0);
+            std::shared_ptr<const Texture2DArrayObject> shadowMap = light.GetShadowMap();
+            shaderProgram.SetUniform(LightShadowEnabledLocation, shadowMap ? 1 : 0); // TODO: uniforms?
             if (shadowMap)
             {
-                shaderProgram.SetTexture(lightShadowMapLocation, 8, *shadowMap);
-                shaderProgram.SetUniform(lightShadowMatrixLocation, light.GetShadowMatrix());
+                shaderProgram.SetTexture(lightShadowMapLocation, 8, *shadowMap); // TODO: textures?
+                shaderProgram.SetUniforms(lightShadowMatrixLocation, std::span<const glm::mat4>(light.GetShadowMatrices()));
                 shaderProgram.SetUniform(lightShadowBiasLocation, light.GetShadowBias());
             }
             needsRender = true;

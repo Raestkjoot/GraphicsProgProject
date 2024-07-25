@@ -99,7 +99,7 @@ std::vector<glm::mat4> Light::GetShadowMatrices() const
 
 glm::mat4 Light::GetShadowMatrix(int index) const
 {
-    return m_shadowMatrix[index];
+    return m_shadowMatrices[index];
 }
 
 void Light::SetShadowMatrices(const std::vector<glm::mat4>& matrices)

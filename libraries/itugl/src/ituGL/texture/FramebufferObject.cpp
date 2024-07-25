@@ -75,7 +75,7 @@ void FramebufferObject::SetTexture(Target target, Attachment attachment, const T
 
 void FramebufferObject::SetTexture(Target target, Attachment attachment, const Texture2DArrayObject& texture, int level)
 {
-    glFramebufferTexture(static_cast<GLenum>(target), static_cast<GLenum>(attachment), texture.GetTarget(), texture.GetHandle(), level);
+    glFramebufferTexture(static_cast<GLenum>(target), static_cast<GLenum>(attachment), texture.GetHandle(), level); // , texture.GetTarget()
 }
 
 void FramebufferObject::SetDrawBuffers(std::span<const Attachment> attachments)

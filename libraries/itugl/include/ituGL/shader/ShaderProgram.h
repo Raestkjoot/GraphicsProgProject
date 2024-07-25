@@ -20,6 +20,7 @@
 
 class Shader;
 class TextureObject;
+class Texture2DArrayObject;
 
 // ShaderProgram is an OpenGL Object that represents all the shaders needed to draw primitives
 class ShaderProgram : public Object
@@ -112,6 +113,7 @@ public:
 
     // Set texture value for a texture uniform
     void SetTexture(Location location, GLint textureUnit, const TextureObject& texture) const;
+    void SetTexture(Location location, GLint textureUnit, const Texture2DArrayObject& texture) const;
 
     // Set the shader program as the active one to be used for rendering
     void Use() const;

@@ -2,6 +2,7 @@
 
 #include <ituGL/shader/Shader.h>
 #include <ituGL/texture/TextureObject.h>
+#include <ituGL/texture/Texture2DArrayObject.h>
 #include <cassert>
 
 #ifndef NDEBUG
@@ -398,6 +399,15 @@ void ShaderProgram::SetTexture(Location location, GLint textureUnit, const Textu
     assert(IsValid());
     assert(IsUsed());
     TextureObject::SetActiveTexture(textureUnit);
+    texture.Bind();
+    SetUniform(location, textureUnit);
+}
+
+void ShaderProgram::SetTexture(Location location, GLint textureUnit, const Texture2DArrayObject& texture) const
+{
+    assert(IsValid());
+    assert(IsUsed());
+    Texture2DArrayObject::SetActiveTexture(textureUnit);
     texture.Bind();
     SetUniform(location, textureUnit);
 }

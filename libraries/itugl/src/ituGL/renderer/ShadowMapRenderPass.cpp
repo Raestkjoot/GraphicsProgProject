@@ -49,9 +49,9 @@ void ShadowMapRenderPass::InitFramebuffer()
 
     targetFramebuffer->Bind();
 
-    std::shared_ptr<const TextureObject> shadowMap = m_light->GetShadowMap();
+    std::shared_ptr<const Texture2DArrayObject> shadowMap = m_light->GetShadowMap();
     assert(shadowMap);
-    targetFramebuffer->SetTexture(FramebufferObject::Target::Draw, FramebufferObject::Attachment::Depth, *shadowMap);
+    targetFramebuffer->SetTexture(FramebufferObject::Target::Draw, FramebufferObject::Attachment::Depth, *shadowMap); // todo: textures?
 
     FramebufferObject::Unbind();
 

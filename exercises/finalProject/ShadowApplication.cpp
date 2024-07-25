@@ -34,7 +34,7 @@
 #include <iostream>
 #include <glm/gtx/string_cast.hpp>
 
-#define N_OF_CASCADES 1
+#define N_OF_CASCADES 3
 
 ShadowApplication::ShadowApplication()
 	: Application(1024, 1024, "Shadow Scene Viewer demo")
@@ -132,8 +132,13 @@ void ShadowApplication::InitializeMaterials()
 		// Load and build shader
 		std::vector<const char*> vertexShaderPaths;
 		vertexShaderPaths.push_back("shaders/version330.glsl");
-		vertexShaderPaths.push_back("shaders/renderer/empty.vert");
+		vertexShaderPaths.push_back("shaders/csm.vert");
 		Shader vertexShader = ShaderLoader(Shader::VertexShader).Load(vertexShaderPaths);
+
+		std::vector<const char*> geometryShaderPaths;
+		geometryShaderPaths.push_back("shaders/version330.glsl");
+		geometryShaderPaths.push_back("shaders/csm.geom");
+		Shader geometryShader = ShaderLoader(Shader::GeometryShader).Load(geometryShaderPaths);
 
 		std::vector<const char*> fragmentShaderPaths;
 		fragmentShaderPaths.push_back("shaders/version330.glsl");
@@ -141,7 +146,7 @@ void ShadowApplication::InitializeMaterials()
 		Shader fragmentShader = ShaderLoader(Shader::FragmentShader).Load(fragmentShaderPaths);
 
 		std::shared_ptr<ShaderProgram> shaderProgramPtr = std::make_shared<ShaderProgram>();
-		shaderProgramPtr->Build(vertexShader, fragmentShader);
+		shaderProgramPtr->Build(vertexShader, fragmentShader, geometryShader);
 
 		// Get transform related uniform locations
 		ShaderProgram::Location worldViewProjMatrixLocation = shaderProgramPtr->GetUniformLocation("WorldViewProjMatrix");
@@ -395,7 +400,7 @@ void ShadowApplication::InitializeRenderer()
 		if (!m_mainLight->GetShadowMap())
 		{
 			m_mainLight->CreateShadowMap(glm::vec2(2000, 2000), N_OF_CASCADES);
-			m_mainLight->SetShadowBias(0.001f);
+			m_mainLight->SetShadowBias(0.001f); // TODO: dynamic bias
 		}
 		std::unique_ptr<ShadowMapRenderPass> shadowMapRenderPass(std::make_unique<ShadowMapRenderPass>(m_mainLight, m_shadowMapMaterial));
 		glm::vec3 min, max;
@@ -563,24 +568,24 @@ void ShadowApplication::RenderGUI()
 		}
 	}
 
+	// Debug window for the light camera
+	//if (auto window = m_imGui.UseWindow("Shadow Debug"))
+	//{
+	//	ImVec2 pos = ImGui::GetCursorScreenPos();
+	//	ImVec2 wsize = ImGui::GetWindowSize();
+	//	glm::vec2 res = m_mainLight->GetShadowMapResolution();
 
-	if (auto window = m_imGui.UseWindow("Shadow Debug"))
-	{
-		ImVec2 pos = ImGui::GetCursorScreenPos();
-		ImVec2 wsize = ImGui::GetWindowSize();
-		glm::vec2 res = m_mainLight->GetShadowMapResolution();
+	//	ImVec2 minCorner = ImVec2(pos.x, pos.y);
+	//	float fitX = wsize.x / res.x;
+	//	float fitY = wsize.y / res.y;
+	//	float fit = std::min(fitX, fitY);
+	//	ImVec2 maxCorner = ImVec2(fit * res.x + pos.x, fit * res.y + pos.y);
 
-		ImVec2 minCorner = ImVec2(pos.x, pos.y);
-		float fitX = wsize.x / res.x;
-		float fitY = wsize.y / res.y;
-		float fit = std::min(fitX, fitY);
-		ImVec2 maxCorner = ImVec2(fit * res.x + pos.x, fit * res.y + pos.y);
-
-		ImGui::GetWindowDrawList()->AddImage(
-			(ImTextureID)m_mainLight->GetShadowMap()->GetHandle(), // Image handle
-			minCorner, maxCorner // Image size
-			, ImVec2(0, 1), ImVec2(1, 0)); // UV coords (flipped)
-	}
+	//	ImGui::GetWindowDrawList()->AddImage(
+	//		(ImTextureID)m_mainLight->GetShadowMap()->GetHandle(), // Image handle
+	//		minCorner, maxCorner // Image size
+	//		, ImVec2(0, 1), ImVec2(1, 0)); // UV coords (flipped)
+	//}
 
 	m_imGui.EndFrame();
 }
