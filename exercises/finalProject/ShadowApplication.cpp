@@ -48,7 +48,7 @@ ShadowApplication::ShadowApplication()
 	, m_bloomIntensity(1.0f)
 	, m_terrainColor(1.0f)
 	, m_cameraFarPlane(200.0f)
-	, m_cascadeSplits({m_cameraFarPlane * 0.4f, m_cameraFarPlane * 0.125f})
+	, m_cascadeSplits({0.125f, 0.4f})
 {
 }
 
@@ -58,8 +58,6 @@ void ShadowApplication::Initialize()
 
 	// Initialize DearImGUI
 	m_imGui.Initialize(GetMainWindow());
-
-	std::cout << "cascade splits " << m_cascadeSplits[0] << ", " << m_cascadeSplits[1] << std::endl;
 
 	InitializeCamera();
 	InitializeLights();
@@ -403,6 +401,7 @@ void ShadowApplication::InitializeRenderer()
 		glm::vec3 min, max;
 		m_scene.GetAABBBounds(min, max);
 		shadowMapRenderPass->SetSceneAABBBounds(min, max);
+		shadowMapRenderPass->SetCascadeSplits(m_cascadeSplits);
 		m_shadowPassIndex = m_renderer.AddRenderPass(std::move(shadowMapRenderPass));
 	}
 

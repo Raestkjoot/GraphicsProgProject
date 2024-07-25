@@ -54,6 +54,11 @@ void ShadowMapRenderPass::InitFramebuffer()
     m_shadowBufferSize = static_cast<float>(m_light->GetShadowMapResolution().x);
 }
 
+void ShadowMapRenderPass::SetCascadeSplits(const std::vector<float>& cascadeSplits)
+{
+    m_cascadeSplits = cascadeSplits;
+}
+
 void ShadowMapRenderPass::Render()
 {
     Renderer& renderer = GetRenderer();
@@ -84,8 +89,11 @@ void ShadowMapRenderPass::Render()
         m_mainCameraCopy = currentCamera;
 
     glEnable(GL_DEPTH_CLAMP); // pancaking
-    InitLightCamera(lightCamera, m_mainCameraCopy);
 
+    m_light->SetShadowMatrices(InitLightCamera(lightCamera, m_mainCameraCopy));
+
+    // why do we have to set light camera? might cause bugs when we just setup shadow matrices
+    // TODO: make sure no bugs are caused
     renderer.SetCurrentCamera(lightCamera);
 
     // for all drawcalls
@@ -104,8 +112,6 @@ void ShadowMapRenderPass::Render()
         first = false;
     }
 
-    m_light->SetShadowMatrix(lightCamera.GetViewProjectionMatrix());
-
     // Restore viewport
     renderer.GetDevice().SetViewport(currentViewport.x, currentViewport.y, currentViewport.z, currentViewport.w);
 
@@ -119,117 +125,137 @@ void ShadowMapRenderPass::Render()
     glDisable(GL_DEPTH_CLAMP);
 }
 
-void ShadowMapRenderPass::InitLightCamera(Camera& lightCamera, const Camera& curCamera)
+std::vector<glm::mat4> ShadowMapRenderPass::InitLightCamera(Camera& lightCamera, const Camera& curCamera)
 {
+    std::vector<glm::mat4> shadowMatrices;
     Renderer& renderer = GetRenderer();
     DebugRenderPass& debugRenderer = renderer.GetDebugRenderPass();
 
     debugRenderer.DrawAABB(m_sceneAABBCenter, m_sceneAABBExtents, Color(1.0f, 1.0f, 1.0f)); // Draw scene AABB
 
-    // Find the view volume center
-    std::vector<glm::vec3> viewCorners = curCamera.GetFrustumCornersWorldSpace3D();
-    debugRenderer.DrawArbitraryBox(viewCorners, Color(1.0f, 0.0f, 0.0f)); // Draw view frustum
-    glm::vec3 center(0.0f);
-    for (const auto& v : viewCorners)
+    float cascadeNear, cascadeFar;
+
+    for (int cascadeIdx = 0; cascadeIdx < m_cascadeSplits.size() + 1; ++cascadeIdx)
     {
-        center += v;
-    }
-    center /= viewCorners.size();
+        cascadeNear = cascadeIdx == 0 ? 0.0f : m_cascadeSplits[cascadeIdx - 1];
+        cascadeFar = cascadeIdx == m_cascadeSplits.size() ? 1.0f : m_cascadeSplits[cascadeIdx];
 
-    glm::vec3 lightDirection = center + m_light->GetDirection();
-    auto lightView = glm::lookAt(center, lightDirection, glm::vec3(0.0f, 1.0f, 0.0f));
-    debugRenderer.DrawMatrix(glm::inverse(lightView), center, 20.0f); // Draw light view matrix in center of view frustum
+        std::vector<glm::vec3> viewCorners = curCamera.GetFrustumCornersWorldSpace3D();
 
-    // Compute min and max xy for the light projection matrix
-    glm::vec3 min(std::numeric_limits<float>::max());
-    glm::vec3 max(std::numeric_limits<float>::lowest());
-    float sphereRadius = 0.0f;
-    for (const auto& v : viewCorners)
-    {
-        // calculate radius of a bounding sphere surrounding the view frustum corners
-        float dist = glm::distance(v, center);
-        sphereRadius = glm::max(sphereRadius, dist);
-        // This transformation should take the points into light space, where we want to find the xy bounds
-        const auto trf = lightView * glm::vec4(v, 1.0f);
-        min.x = std::min(min.x, trf.x);
-        min.y = std::min(min.y, trf.y);
-        min.z = std::min(min.z, trf.z);
-        max.x = std::max(max.x, trf.x);
-        max.y = std::max(max.y, trf.y);
-        max.z = std::max(max.z, trf.z);
-    }
-
-    // DEBUG xy bounds of the light cam
-    {
-        float lightCenter = (lightView * glm::vec4(center.x, center.y, center.z, 1.0f)).z;
-        lightCenter /= (lightView * glm::vec4(center.x, center.y, center.z, 1.0f)).w;
-        std::vector<glm::vec4> lightBoundsLightSpace;
-        lightBoundsLightSpace.push_back(glm::vec4(min.x, min.y, lightCenter, 1.0f));
-        lightBoundsLightSpace.push_back(glm::vec4(min.x, max.y, lightCenter, 1.0f));
-        lightBoundsLightSpace.push_back(glm::vec4(max.x, max.y, lightCenter, 1.0f));
-        lightBoundsLightSpace.push_back(glm::vec4(max.x, min.y, lightCenter, 1.0f));
-
-        std::vector<glm::vec3> lightBoundsWorldSpace;
-        auto invLightView = glm::inverse(lightView);
-        for (auto v : lightBoundsLightSpace)
+        for (int i = 0; i < 8; i += 2)
         {
-            glm::vec3 corn = glm::vec3(invLightView * v);
-            lightBoundsWorldSpace.push_back(corn);
+            glm::vec3 cornerEdge = viewCorners[i + 1] - viewCorners[i];
+            glm::vec3 nearCornerEdge = cornerEdge * cascadeNear;
+            glm::vec3 farCornerEdge = cornerEdge * cascadeFar;
+            viewCorners[i + 1] = viewCorners[i] + farCornerEdge;
+            viewCorners[i] = viewCorners[i] + nearCornerEdge;
         }
 
-        debugRenderer.DrawSquare(lightBoundsWorldSpace, Color(0.8f, 0.0f, 0.8f)); // Draw 2D square representing the xy bounds of the light camera
+        debugRenderer.DrawArbitraryBox(viewCorners, Color(1.0f, 0.0f, 0.0f)); // Draw view frustum
+        // Find the view volume center
+        glm::vec3 center(0.0f);
+        for (const auto& v : viewCorners)
+        {
+            center += v;
+        }
+        center /= viewCorners.size();
+
+        glm::vec3 lightDirection = center + m_light->GetDirection();
+        auto lightView = glm::lookAt(center, lightDirection, glm::vec3(0.0f, 1.0f, 0.0f));
+        debugRenderer.DrawMatrix(glm::inverse(lightView), center, 20.0f); // Draw light view matrix in center of view frustum
+
+        // Compute min and max xy for the light projection matrix
+        glm::vec3 min(std::numeric_limits<float>::max());
+        glm::vec3 max(std::numeric_limits<float>::lowest());
+        float sphereRadius = 0.0f;
+        for (const auto& v : viewCorners)
+        {
+            // calculate radius of a bounding sphere surrounding the view frustum corners
+            float dist = glm::distance(v, center);
+            sphereRadius = glm::max(sphereRadius, dist);
+            // This transformation should take the points into light space, where we want to find the xy bounds
+            const auto trf = lightView * glm::vec4(v, 1.0f);
+            min.x = std::min(min.x, trf.x);
+            min.y = std::min(min.y, trf.y);
+            min.z = std::min(min.z, trf.z);
+            max.x = std::max(max.x, trf.x);
+            max.y = std::max(max.y, trf.y);
+            max.z = std::max(max.z, trf.z);
+        }
+
+        // DEBUG xy bounds of the light cam
+        {
+            float lightCenter = (lightView * glm::vec4(center.x, center.y, center.z, 1.0f)).z;
+            lightCenter /= (lightView * glm::vec4(center.x, center.y, center.z, 1.0f)).w;
+            std::vector<glm::vec4> lightBoundsLightSpace;
+            lightBoundsLightSpace.push_back(glm::vec4(min.x, min.y, lightCenter, 1.0f));
+            lightBoundsLightSpace.push_back(glm::vec4(min.x, max.y, lightCenter, 1.0f));
+            lightBoundsLightSpace.push_back(glm::vec4(max.x, max.y, lightCenter, 1.0f));
+            lightBoundsLightSpace.push_back(glm::vec4(max.x, min.y, lightCenter, 1.0f));
+
+            std::vector<glm::vec3> lightBoundsWorldSpace;
+            auto invLightView = glm::inverse(lightView);
+            for (auto v : lightBoundsLightSpace)
+            {
+                glm::vec3 corn = glm::vec3(invLightView * v);
+                lightBoundsWorldSpace.push_back(corn);
+            }
+
+            debugRenderer.DrawSquare(lightBoundsWorldSpace, Color(0.8f, 0.0f, 0.8f)); // Draw 2D square representing the xy bounds of the light camera
+        }
+
+        float near, far;
+        near = min.z;
+        far = max.z;
+        float lightNearFarExtent = far - near;
+
+        // Alternate method to pancaking: clip scene AABB against view frustum
+        // auto sceneLightSpace = GetSceneAABBLightSpace(lightView);
+        // min max in light space. Passing in z as reference so ComputeNearFar can recalculate those to a tight fit.
+        //ComputeNearAndFar(near, far, glm::vec2(min.x, min.y), glm::vec2(max.x, max.y), sceneLightSpace);
+
+        // STABILIZATION: Use bounding sphere surrounding the view frustum corners
+        // to counteract flickering from camera rotation.
+        // This was the original line but it still caused some flickering:
+        // sphereRadius = std::ceil(sphereRadius * 16.0f) / 16.0f; 
+        sphereRadius = std::ceil(sphereRadius);
+        // Maybe we need a more specific bias, since ceil might fail if the radius dithering between two numbers like 300.99 and 301.01
+
+        min.x = center.x - sphereRadius;
+        max.x = center.x + sphereRadius;
+        min.y = center.y - sphereRadius;
+        max.y = center.y + sphereRadius;
+
+        min.z = 0.0f;
+        max.z = lightNearFarExtent;
+
+        // STABILIZATION: Move light camera in worldUnitsPerShadowMapTexel increments
+        // to counteract flickering from camera translation.
+        // https://github.com/TheRealMJP/Shadows/blob/master/Shadows/MeshRenderer.cpp#L1500
+        glm::vec3 lightCameraPos = center - m_light->GetDirection() * far;
+        lightView = glm::lookAt(lightCameraPos, center, glm::vec3(0.0f, 1.0f, 0.0f));
+        lightCamera.SetOrthographicProjectionMatrix(min, max);
+        lightCamera.SetViewMatrix(lightView);
+
+        // Create the rounding matrix, by projecting the world-space origin and determining
+        // the fractional offset in texel space
+        glm::vec4 shadowOrigin = glm::vec4(0.f, 0.f, 0.f, 1.0f);
+        shadowOrigin = lightCamera.GetViewProjectionMatrix() * shadowOrigin;
+        shadowOrigin *= m_shadowBufferSize / 2.0f;
+
+        glm::vec4 roundOrigin = glm::round(shadowOrigin);
+        glm::vec4 roundOffset = roundOrigin - shadowOrigin;
+        roundOffset *= 2.0f / m_shadowBufferSize;
+        roundOffset.z = 0.0f;
+        roundOffset.w = 0.0f;
+
+        glm::mat4x4 shadowProj = lightCamera.GetProjectionMatrix();
+        shadowProj[3] += roundOffset;
+        lightCamera.SetProjectionMatrix(shadowProj);
+        shadowMatrices.push_back(lightCamera.GetViewProjectionMatrix());
     }
-
-    float near, far;
-    near = min.z;
-    far = max.z;
-    float lightNearFarExtent = far - near;
-
-    // Alternate method to pancaking: clip scene AABB against view frustum
-    // auto sceneLightSpace = GetSceneAABBLightSpace(lightView);
-    // min max in light space. Passing in z as reference so ComputeNearFar can recalculate those to a tight fit.
-    //ComputeNearAndFar(near, far, glm::vec2(min.x, min.y), glm::vec2(max.x, max.y), sceneLightSpace);
-
-    // STABILIZATION: Use bounding sphere surrounding the view frustum corners
-    // to counteract flickering from camera rotation.
-    // This was the original line but it still caused some flickering:
-    // sphereRadius = std::ceil(sphereRadius * 16.0f) / 16.0f; 
-    sphereRadius = std::ceil(sphereRadius);
-    // Maybe we need a more specific bias, since ceil might fail if the radius dithering between two numbers like 300.99 and 301.01
-
-    min.x = center.x - sphereRadius;
-    max.x = center.x + sphereRadius;
-    min.y = center.y - sphereRadius;
-    max.y = center.y + sphereRadius;
-
-    min.z = 0.0f;
-    max.z = lightNearFarExtent;
-
-    // STABILIZATION: Move light camera in worldUnitsPerShadowMapTexel increments
-    // to counteract flickering from camera translation.
-    // https://github.com/TheRealMJP/Shadows/blob/master/Shadows/MeshRenderer.cpp#L1500
-    glm::vec3 lightCameraPos = center - m_light->GetDirection() * far;
-    lightView = glm::lookAt(lightCameraPos, center, glm::vec3(0.0f, 1.0f, 0.0f));
-    lightCamera.SetOrthographicProjectionMatrix(min, max);
-    lightCamera.SetViewMatrix(lightView);
-
-    // Create the rounding matrix, by projecting the world-space origin and determining
-    // the fractional offset in texel space
-    glm::vec4 shadowOrigin = glm::vec4(0.f, 0.f, 0.f, 1.0f);
-    shadowOrigin = lightCamera.GetViewProjectionMatrix() * shadowOrigin;
-    shadowOrigin *= m_shadowBufferSize / 2.0f;
-
-    glm::vec4 roundOrigin = glm::round(shadowOrigin);
-    glm::vec4 roundOffset = roundOrigin - shadowOrigin;
-    roundOffset *= 2.0f / m_shadowBufferSize;
-    roundOffset.z = 0.0f;
-    roundOffset.w = 0.0f;
-
-    glm::mat4x4 shadowProj = lightCamera.GetProjectionMatrix();
-    shadowProj[3] += roundOffset;
-    lightCamera.SetProjectionMatrix(shadowProj);
-
-
+    
+    return shadowMatrices;
 
     // If we want to support multiple light types
     switch (m_light->GetType())
@@ -469,31 +495,3 @@ std::vector<glm::vec3> ShadowMapRenderPass::GetSceneAABBLightSpace(const glm::ma
 
     return aabbCorners;
 }
-
-/*
-    // TODO: Does the worldUnitsPerTexel require world space? See InitLightCamera.
-    glm::vec2 worldEdges(std::numeric_limits<float>::max());
-    for (const auto& v : corners)
-    {
-        const auto trf = lightView * v;
-        if (min.x > trf.x)
-        {
-            min.x = trf.x;
-            worldEdges.x = v.x;
-        }
-        if (min.y > trf.y)
-        {
-            min.y = trf.y;
-        }
-        if (max.x < trf.x)
-        {
-            max.x = trf.x;
-            worldEdges.y = v.x;
-        }
-        if (max.y < trf.y)
-        {
-            max.y = trf.y;
-        }
-    }
-    float worldUnitsPerTexel = glm::length(worldEdges) / m_shadowBufferSize;
-*/

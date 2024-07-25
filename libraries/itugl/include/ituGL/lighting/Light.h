@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
@@ -46,6 +48,8 @@ public:
 
     glm::mat4 GetShadowMatrix() const;
     void SetShadowMatrix(const glm::mat4& matrix);
+    std::vector<glm::mat4> GetShadowMatrices() const;
+    void SetShadowMatrices(const std::vector<glm::mat4>& matrices);
 
     float GetShadowBias() const;
     void SetShadowBias(float bias);
@@ -57,7 +61,7 @@ protected:
     glm::vec3 m_color;
     float m_intensity;
     std::shared_ptr<const TextureObject> m_shadowMap;
-    glm::mat4 m_shadowMatrix;
+    std::vector<glm::mat4> m_shadowMatrices;
     float m_shadowBias;
     glm::ivec2 m_shadowMapResolution;
 };

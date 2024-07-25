@@ -2,7 +2,7 @@
 
 #include <ituGL/texture/Texture2DObject.h>
 
-Light::Light() : m_color(1.0f), m_intensity(1.0f)
+Light::Light() : m_color(1.0f), m_intensity(1.0f), m_shadowMatrices({ glm::mat4(0.0f) })
 {
 }
 
@@ -92,12 +92,23 @@ bool Light::CreateShadowMap(glm::ivec2 resolution)
 
 glm::mat4 Light::GetShadowMatrix() const
 {
-    return m_shadowMatrix;
+    return m_shadowMatrices[0];
 }
 
 void Light::SetShadowMatrix(const glm::mat4& matrix)
 {
-    m_shadowMatrix = matrix;
+    m_shadowMatrices[0] = matrix;
+}
+
+
+std::vector<glm::mat4> Light::GetShadowMatrices() const
+{
+    return m_shadowMatrices;
+}
+
+void Light::SetShadowMatrices(const std::vector<glm::mat4>& matrices)
+{
+    m_shadowMatrices = matrices;
 }
 
 float Light::GetShadowBias() const

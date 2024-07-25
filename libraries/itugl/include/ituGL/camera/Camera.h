@@ -43,11 +43,16 @@ public:
     std::vector<glm::vec3> GetFrustumCornersWorldSpace3D() const;
     glm::mat4 GetInvViewProjMatrix() const;
 
+    float GetNearPlane() const;
+    float GetFarPlane() const;
+
 
 private:
     // The view matrix (from world space to view space)
     glm::mat4 m_viewMatrix;
-
     // The projection matrix (from view space to clip space)
     glm::mat4 m_projMatrix;
+
+    float m_nearPlane;
+    float m_farPlane;
 };

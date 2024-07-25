@@ -30,6 +30,7 @@ public:
 
     void SetVolume(const glm::vec3& volumeCenter, const glm::vec3& volumeSize);
     void SetSceneAABBBounds(const glm::vec3& min, const glm::vec3& max);
+    void SetCascadeSplits(const std::vector<float>& cascadeSplits);
 
     void Render() override;
 
@@ -37,10 +38,9 @@ public:
 
 private:
     void InitFramebuffer();
-    void InitLightCamera(Camera& lightCamera, const Camera& curCamera);
+    std::vector<glm::mat4> InitLightCamera(Camera& lightCamera, const Camera& curCamera);
     void ComputeNearAndFar(float& near, float& far, const glm::vec2& lightFrustumMin, 
         const glm::vec2& lightFrustumMax, const std::vector<glm::vec3>& sceneAABBLightSpace);
-    void ComputeNearAndFarNoClip(float& near, float& far, const std::vector<glm::vec3>& sceneAABB);
     std::vector<glm::vec3> GetSceneAABBLightSpace(const glm::mat4& lightView);
 
 
@@ -54,6 +54,7 @@ private:
     glm::vec3 m_volumeCenter;
     glm::vec3 m_volumeSize;
     float m_shadowBufferSize;
+    std::vector<float> m_cascadeSplits;
 
     glm::vec3 m_sceneAABBMin;
     glm::vec3 m_sceneAABBMax;
