@@ -102,4 +102,6 @@ private:
     float m_bloomIntensity;
 
     int m_shadowPassIndex;
+    float m_cameraFarPlane;
+    std::vector<float> m_cascadeSplits;
 };
