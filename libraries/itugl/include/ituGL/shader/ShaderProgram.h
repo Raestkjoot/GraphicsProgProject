@@ -17,6 +17,7 @@
 #include <glm/mat4x4.hpp>
 
 #include <span>
+#include <vector>
 
 class Shader;
 class TextureObject;
@@ -109,6 +110,8 @@ public:
     void SetUniforms(Location location, std::span<const glm::vec<N, T>> values) const;
     template<typename T, int C, int R>
     void SetUniforms(Location location, std::span<const glm::mat<C, R, T>> values) const;
+
+    void SetUniformMatrices(Location location, const std::vector<glm::mat4>& matrices) const;
 
     // Set texture value for a texture uniform
     void SetTexture(Location location, GLint textureUnit, const TextureObject& texture) const;

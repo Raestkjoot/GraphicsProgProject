@@ -132,8 +132,13 @@ void ShadowApplication::InitializeMaterials()
 		// Load and build shader
 		std::vector<const char*> vertexShaderPaths;
 		vertexShaderPaths.push_back("shaders/version330.glsl");
-		vertexShaderPaths.push_back("shaders/renderer/empty.vert");
+		vertexShaderPaths.push_back("shaders/csm.vert");
 		Shader vertexShader = ShaderLoader(Shader::VertexShader).Load(vertexShaderPaths);
+
+		std::vector<const char*> geometryShaderPaths;
+		geometryShaderPaths.push_back("shaders/version330.glsl");
+		geometryShaderPaths.push_back("shaders/csm.geom");
+		Shader geometryShader = ShaderLoader(Shader::GeometryShader).Load(geometryShaderPaths);
 
 		std::vector<const char*> fragmentShaderPaths;
 		fragmentShaderPaths.push_back("shaders/version330.glsl");
@@ -141,16 +146,18 @@ void ShadowApplication::InitializeMaterials()
 		Shader fragmentShader = ShaderLoader(Shader::FragmentShader).Load(fragmentShaderPaths);
 
 		std::shared_ptr<ShaderProgram> shaderProgramPtr = std::make_shared<ShaderProgram>();
-		shaderProgramPtr->Build(vertexShader, fragmentShader);
+		shaderProgramPtr->Build(vertexShader, fragmentShader, geometryShader);
 
 		// Get transform related uniform locations
 		ShaderProgram::Location worldViewProjMatrixLocation = shaderProgramPtr->GetUniformLocation("WorldViewProjMatrix");
+		//ShaderProgram::Location lightSpaceMatricesLocation = shaderProgramPtr->GetUniformLocation("LightSpaceMatrices");
 
 		// Register shader with renderer
 		m_renderer.RegisterShaderProgram(shaderProgramPtr,
 			[=](const ShaderProgram& shaderProgram, const glm::mat4& worldMatrix, const Camera& camera, bool cameraChanged)
 			{
 				shaderProgram.SetUniform(worldViewProjMatrixLocation, camera.GetViewProjectionMatrix() * worldMatrix);
+				//shaderProgram.SetUniform(lightSpaceMatricesLocation, camera.GetLightProjectionMatrices() * worldMatrix);
 			},
 			nullptr
 		);

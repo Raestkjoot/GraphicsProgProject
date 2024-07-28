@@ -30,6 +30,12 @@ Renderer::Renderer(DeviceGL& device)
 
     m_debugRenderPass = std::make_unique<DebugRenderPass>();
     m_debugRenderPass->SetRenderer(this);
+
+    glGenBuffers(1, &m_matricesUBO);
+    glBindBuffer(GL_UNIFORM_BUFFER, m_matricesUBO);
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(glm::mat4x4) * 16, nullptr, GL_STATIC_DRAW);
+    glBindBufferBase(GL_UNIFORM_BUFFER, 0, m_matricesUBO);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
 bool Renderer::HasCamera() const
@@ -161,7 +167,7 @@ Renderer::UpdateLightsFunction Renderer::GetDefaultUpdateLightsFunction(const Sh
     ShaderProgram::Location lightAttenuationLocation = shaderProgram.GetUniformLocation("LightAttenuation");
     ShaderProgram::Location LightShadowEnabledLocation = shaderProgram.GetUniformLocation("LightShadowEnabled");
     ShaderProgram::Location lightShadowMapLocation = shaderProgram.GetUniformLocation("LightShadowMap"); // TODO: Shadow Maps (plural)
-    ShaderProgram::Location lightShadowMatrixLocation = shaderProgram.GetUniformLocation("LightShadowMatrix");
+    ShaderProgram::Location lightShadowMatricesLocation = shaderProgram.GetUniformLocation("LightShadowMatrices");
     ShaderProgram::Location lightShadowBiasLocation = shaderProgram.GetUniformLocation("LightShadowBias");
 
     return [=](const ShaderProgram& shaderProgram, std::span<const Light* const> lights, unsigned int& lightIndex) -> bool
@@ -184,7 +190,7 @@ Renderer::UpdateLightsFunction Renderer::GetDefaultUpdateLightsFunction(const Sh
             if (shadowMap)
             {
                 shaderProgram.SetTexture(lightShadowMapLocation, 8, *shadowMap);
-                shaderProgram.SetUniform(lightShadowMatrixLocation, light.GetShadowMatrix());
+                shaderProgram.SetUniformMatrices(lightShadowMatricesLocation, light.GetShadowMatrices());
                 shaderProgram.SetUniform(lightShadowBiasLocation, light.GetShadowBias());
             }
             needsRender = true;

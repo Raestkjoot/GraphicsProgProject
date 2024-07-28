@@ -393,6 +393,14 @@ void ShaderProgram::SetUniforms<GLfloat, 4, 4>(Location location, const GLfloat*
     glUniformMatrix4fv(location, count, false, values);
 }
 
+// Kind of hacky but whatever
+void ShaderProgram::SetUniformMatrices(Location location, const std::vector<glm::mat4>& matrices) const
+{
+    assert(IsValid());
+    assert(IsUsed());
+    glUniformMatrix4fv(location, matrices.size(), false, &matrices[0][0][0]);
+}
+
 void ShaderProgram::SetTexture(Location location, GLint textureUnit, const TextureObject& texture) const
 {
     assert(IsValid());

@@ -114,4 +114,6 @@ private:
     std::vector<std::unique_ptr<RenderPass>> m_passes;
 
     std::unique_ptr<DebugRenderPass> m_debugRenderPass;
+
+    unsigned int m_matricesUBO;
 };
