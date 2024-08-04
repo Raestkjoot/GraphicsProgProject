@@ -1,6 +1,7 @@
 #include <ituGL/lighting/Light.h>
 
 #include <ituGL/texture/Texture2DObject.h>
+#include <ituGL/texture/Texture2DArrayObject.h>
 
 Light::Light() : m_color(1.0f), m_intensity(1.0f), m_shadowMatrices({ glm::mat4(0.0f) })
 {
@@ -76,9 +77,9 @@ void Light::SetShadowMap(std::shared_ptr<const TextureObject> shadowMap)
 bool Light::CreateShadowMap(glm::ivec2 resolution)
 {
     assert(!m_shadowMap);
-    std::shared_ptr<Texture2DObject> shadowMap = std::make_shared<Texture2DObject>();
+    std::shared_ptr<Texture2DArrayObject> shadowMap = std::make_shared<Texture2DArrayObject>();
     shadowMap->Bind();
-    shadowMap->SetImage(0, resolution.x, resolution.y, TextureObject::FormatDepth, TextureObject::InternalFormatDepth32);
+    shadowMap->SetImage(0, resolution.x, resolution.y, 3 /*cascade levels*/, TextureObject::FormatDepth, TextureObject::InternalFormatDepth32);
     shadowMap->SetParameter(TextureObject::ParameterEnum::MinFilter, GL_LINEAR);
     shadowMap->SetParameter(TextureObject::ParameterEnum::MagFilter, GL_LINEAR);
     shadowMap->SetParameter(TextureObject::ParameterEnum::WrapS, GL_CLAMP_TO_BORDER);

@@ -6,7 +6,7 @@ uniform vec3 LightDirection;
 uniform vec4 LightAttenuation;
 
 uniform bool LightShadowEnabled;
-uniform sampler2DShadow LightShadowMap;
+uniform sampler2DArray LightShadowMap;
 uniform float LightShadowBias;
 uniform mat4 LightShadowMatrices[3];
 
@@ -40,10 +40,28 @@ float ComputeAttenuation(vec3 position, vec3 lightDir)
 float ComputeShadow(vec3 position)
 {
 	float shadow = 1.0f;
+
 	if (LightShadowEnabled)
 	{
+		// Select cascade layer
+		float depthValue = abs(position.z);
+		int layer = -1;
+//		for (int i = 0; i < 3; ++i)
+//		{
+//			// TODO: cascadePlaneDistances
+//			if (depthValue < cascadePlaneDistances[i])
+//			{
+//				layer = i;
+//				break;
+//			}
+//		}
+		if (layer == -1)
+		{
+			layer = 3;
+		}
+
 		// Transform position to light space
-		vec4 lightSpacePosition = LightShadowMatrices[0] * vec4(position, 1.0f);
+		vec4 lightSpacePosition = LightShadowMatrices[layer] * vec4(position, 1.0f);
 
 		// Homogeneous coordinates
 		lightSpacePosition /= lightSpacePosition.w;
@@ -55,7 +73,7 @@ float ComputeShadow(vec3 position)
 		lightSpacePosition.z *= (1.0f - LightShadowBias);
 
 		// Sample shadow texture
-		shadow = texture(LightShadowMap, lightSpacePosition.xyz);
+		shadow = texture(LightShadowMap, lightSpacePosition.xyz, layer).r;
 	}
 	return shadow;
 }

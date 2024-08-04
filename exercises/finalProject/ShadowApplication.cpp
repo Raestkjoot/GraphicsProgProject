@@ -571,23 +571,23 @@ void ShadowApplication::RenderGUI()
 	}
 
 
-	if (auto window = m_imGui.UseWindow("Shadow Debug"))
-	{
-		ImVec2 pos = ImGui::GetCursorScreenPos();
-		ImVec2 wsize = ImGui::GetWindowSize();
-		glm::vec2 res = m_mainLight->GetShadowMapResolution();
+	//if (auto window = m_imGui.UseWindow("Shadow Debug"))
+	//{
+	//	ImVec2 pos = ImGui::GetCursorScreenPos();
+	//	ImVec2 wsize = ImGui::GetWindowSize();
+	//	glm::vec2 res = m_mainLight->GetShadowMapResolution();
 
-		ImVec2 minCorner = ImVec2(pos.x, pos.y);
-		float fitX = wsize.x / res.x;
-		float fitY = wsize.y / res.y;
-		float fit = std::min(fitX, fitY);
-		ImVec2 maxCorner = ImVec2(fit * res.x + pos.x, fit * res.y + pos.y);
+	//	ImVec2 minCorner = ImVec2(pos.x, pos.y);
+	//	float fitX = wsize.x / res.x;
+	//	float fitY = wsize.y / res.y;
+	//	float fit = std::min(fitX, fitY);
+	//	ImVec2 maxCorner = ImVec2(fit * res.x + pos.x, fit * res.y + pos.y);
 
-		ImGui::GetWindowDrawList()->AddImage(
-			(ImTextureID)m_mainLight->GetShadowMap()->GetHandle(), // Image handle
-			minCorner, maxCorner // Image size
-			, ImVec2(0, 1), ImVec2(1, 0)); // UV coords (flipped)
-	}
+	//	ImGui::GetWindowDrawList()->AddImage(
+	//		(ImTextureID)m_mainLight->GetShadowMap()->GetHandle(), // Image handle
+	//		minCorner, maxCorner // Image size
+	//		, ImVec2(0, 1), ImVec2(1, 0)); // UV coords (flipped)
+	//}
 
 	m_imGui.EndFrame();
 }
